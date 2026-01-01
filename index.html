@@ -200,11 +200,9 @@
             border-radius: 4px;
         }
 
-        /* Logic for "No Mouse" */
         .cursor-none { cursor: none; }
         .cursor-pointer { cursor: pointer; }
 
-        /* The Hitbox */
         #bridge-hitbox {
             fill: none;
             stroke: transparent;
@@ -212,7 +210,6 @@
             pointer-events: stroke; 
         }
 
-        /* Visual Layers */
         #bridge-glow {
             fill: none;
             stroke: var(--spirit);
@@ -243,7 +240,6 @@
 
         @keyframes flowStream { to { stroke-dashoffset: -60; } }
 
-        /* The Spirit Cursor */
         #spirit-cursor { 
             width: 16px; height: 16px; 
             background: #fff; 
@@ -274,7 +270,6 @@
             100% { transform: translate(0); } 
         }
 
-        /* Start/End Nodes */
         .node { fill: var(--gold-base); cursor: pointer; transition: fill 0.3s, r 0.3s; }
         .node:hover { fill: #fff; r: 18px; }
         .start-active { fill: #39ff14; filter: drop-shadow(0 0 10px #39ff14); animation: pulse 1s infinite; }
@@ -443,19 +438,20 @@
     </div>
 
     <script>
-        // --- NAVIGATION & INIT ---
-        window.onload = function() {
-            initDredges();
-        };
-
-        function nav(id) {
+        // --- NAVIGATION ---
+        // Attached to window to prevent scope errors
+        window.nav = function(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
             const active = document.getElementById(id);
-            active.classList.remove('hidden');
-            active.style.animation = 'none';
-            active.offsetHeight; /* trigger reflow */
-            active.style.animation = 'fadeIn 0.6s forwards ease-out';
-            if(id === 'game3') resetBridge();
+            if(active) {
+                active.classList.remove('hidden');
+                active.style.animation = 'none';
+                active.offsetHeight; /* trigger reflow */
+                active.style.animation = 'fadeIn 0.6s forwards ease-out';
+                if(id === 'game3') resetBridge();
+            } else {
+                console.error("Game ID not found:", id);
+            }
         }
 
         // --- GAME 1: WHEEL OF HORRORS ---
@@ -471,7 +467,7 @@
         ];
 
         let currentDeg = 0;
-        function spinWheel(val) {
+        window.spinWheel = function(val) {
             const wheel = document.getElementById('wheel-img');
             const sliceDeg = 45;
             const targetDeg = (val - 1) * sliceDeg; 
@@ -487,12 +483,13 @@
 
         function showModal(val) {
             const data = horrorOutcomes[val - 1];
+            if(!data) return;
             document.getElementById('m-title').innerHTML = data.title;
             document.getElementById('m-desc').innerHTML = data.desc;
             document.getElementById('horror-modal').classList.add('modal-active');
         }
 
-        function closeModal() {
+        window.closeModal = function() {
             document.getElementById('horror-modal').classList.remove('modal-active');
         }
 
@@ -500,6 +497,7 @@
         let currentDredgeIdx = -1;
         function initDredges() {
             const grid = document.getElementById('dredge-grid');
+            if(!grid) return;
             grid.innerHTML = '';
             for(let i=0; i<9; i++) {
                 const cell = document.createElement('div');
@@ -532,7 +530,7 @@
             do { newIdx = Math.floor(Math.random() * 9); } while(newIdx === currentDredgeIdx);
             currentDredgeIdx = newIdx;
             const cell = document.getElementById(`cell-${currentDredgeIdx}`);
-            cell.querySelector('.dretch-img').classList.add('dretch-active');
+            if(cell) cell.querySelector('.dretch-img').classList.add('dretch-active');
         }
 
         function whackDredge(e) {
@@ -541,26 +539,30 @@
             setTimeout(spawnDredge, 500);
         }
 
-        // --- GAME 3: BRIDGE (UPDATED) ---
+        // --- GAME 3: BRIDGE ---
         let tracingActive = false;
         let isOnPath = false;
         let hasWon = false;
 
-        document.getElementById('bridge-ui').addEventListener('mousemove', (e) => {
-            if (!tracingActive) return;
-            const rect = document.getElementById('bridge-ui').getBoundingClientRect();
-            const cursor = document.getElementById('spirit-cursor');
-            cursor.style.left = (e.clientX - rect.left) + 'px';
-            cursor.style.top = (e.clientY - rect.top) + 'px';
-        });
+        const bridgeUI = document.getElementById('bridge-ui');
+        if(bridgeUI) {
+            bridgeUI.addEventListener('mousemove', (e) => {
+                if (!tracingActive) return;
+                const rect = bridgeUI.getBoundingClientRect();
+                const cursor = document.getElementById('spirit-cursor');
+                cursor.style.left = (e.clientX - rect.left) + 'px';
+                cursor.style.top = (e.clientY - rect.top) + 'px';
+            });
+        }
 
-        function resetBridge() {
+        window.resetBridge = function() {
             tracingActive = false;
             isOnPath = false;
             hasWon = false;
-            document.getElementById('bridge-ui').classList.remove('fail-state');
-            document.getElementById('bridge-ui').classList.remove('cursor-none');
-            document.getElementById('bridge-ui').classList.add('cursor-pointer');
+            const ui = document.getElementById('bridge-ui');
+            ui.classList.remove('fail-state');
+            ui.classList.remove('cursor-none');
+            ui.classList.add('cursor-pointer');
             document.getElementById('spirit-cursor').style.display = 'none';
             document.getElementById('fail-msg').style.display = 'none';
             document.getElementById('win-msg').style.display = 'none';
@@ -568,7 +570,7 @@
             document.getElementById('start-node').classList.add('start-active');
         }
 
-        function beginTracing(e) {
+        window.beginTracing = function(e) {
             if (hasWon) return;
             tracingActive = true;
             isOnPath = true; 
@@ -583,15 +585,78 @@
             document.getElementById('start-node').classList.remove('start-active');
         }
 
-        function confirmOnPath() {
+        window.confirmOnPath = function() {
             if (!tracingActive) return;
             isOnPath = true;
         }
 
-        function confirmOffPath() {
+        window.confirmOffPath = function() {
             if (!tracingActive || hasWon) return;
             isOnPath = false;
             triggerFail();
         }
 
-        function trigger
+        function triggerFail() {
+            tracingActive = false;
+            const ui = document.getElementById('bridge-ui');
+            ui.classList.add('fail-state');
+            document.getElementById('fail-msg').style.display = 'block';
+            document.getElementById('reset-bridge-btn').style.display = 'inline-block';
+            ui.classList.remove('cursor-none');
+            ui.classList.add('cursor-pointer');
+        }
+
+        window.checkWin = function() {
+            if (tracingActive && isOnPath) {
+                hasWon = true;
+                tracingActive = false;
+                document.getElementById('win-msg').style.display = 'block';
+                const ui = document.getElementById('bridge-ui');
+                ui.classList.remove('cursor-none');
+                ui.classList.add('cursor-pointer');
+            }
+        }
+
+        // --- GAME 5: ROPERS ---
+        window.updateVials = function() {
+            const maxHP = 50; 
+            const inputs = [
+                { id: 1, val: parseInt(document.getElementById(`dmg-1`).value) || 0 },
+                { id: 2, val: parseInt(document.getElementById(`dmg-2`).value) || 0 },
+                { id: 3, val: parseInt(document.getElementById(`dmg-3`).value) || 0 },
+                { id: 4, val: parseInt(document.getElementById(`dmg-4`).value) || 0 }
+            ];
+
+            inputs.forEach(item => {
+                let pct = (item.val / maxHP) * 100;
+                if(pct > 100) pct = 100;
+                document.getElementById(`mask-${item.id}`).style.height = pct + '%';
+            });
+
+            const allZero = inputs.every(i => i.val === 0);
+            if (allZero) {
+                document.querySelectorAll('.vial-unit').forEach(u => {
+                    u.classList.remove('vial-danger', 'vial-safe');
+                });
+                return;
+            }
+
+            const minVal = Math.min(...inputs.map(i => i.val));
+            inputs.forEach(item => {
+                const unit = document.getElementById(`vial-unit-${item.id}`);
+                if (item.val === minVal) {
+                    unit.classList.add('vial-danger');
+                    unit.classList.remove('vial-safe');
+                } else {
+                    unit.classList.add('vial-safe');
+                    unit.classList.remove('vial-danger');
+                }
+            });
+        }
+
+        // --- INITIALIZATION ---
+        // Run this at the end to ensure DOM is ready
+        initDredges();
+    </script>
+</body>
+</html>
