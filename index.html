@@ -115,7 +115,7 @@
         .wheel-btn { width: 50px; height: 50px; padding: 0; border-radius: 50%; line-height: 50px; }
         #wheel-result { min-height: 60px; margin-top: 20px; font-family: 'Cinzel'; font-size: 1.8rem; color: #fff; text-shadow: 0 0 10px var(--gold-base); opacity: 0; transition: opacity 0.5s; }
 
-        /* --- GAME 2: DREDGES (VISIBILITY FIX) --- */
+        /* --- GAME 2: DREDGES (FINAL FIX) --- */
         .grid-container {
             display: grid;
             grid-template-columns: repeat(3, 180px);
@@ -128,25 +128,23 @@
             width: 180px; height: 180px;
             position: relative; 
             cursor: crosshair;
-            overflow: hidden; /* This crops the square image to a circle */
+            overflow: hidden; 
             border-radius: 50%; 
         }
 
         .portal-img {
             width: 100%; height: 100%;
             position: absolute; top: 0; left: 0; 
-            z-index: 5; /* Middle Layer */
+            z-index: 5; 
             pointer-events: none;
             filter: drop-shadow(0 10px 10px rgba(0,0,0,0.8));
         }
 
-        /* FIX: Z-Index 6 puts it ON TOP of the portal so it is definitely seen */
         .dretch-img {
-            width: 70%; 
-            height: 70%;
+            width: 70%; height: 70%;
             position: absolute; 
             top: 15%; left: 15%; 
-            z-index: 6; /* Top Layer */
+            z-index: 6; 
             border-radius: 50%; 
             object-fit: cover; 
             transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -169,12 +167,11 @@
             100% {opacity: 0; transform: scale(1.4); } 
         }
 
-/* --- GAME 3: THE ABYSSAL PATH --- */
+        /* --- GAME 3: THE ABYSSAL PATH --- */
         .bridge-container {
             position: relative; 
             width: 100%; max-width: 900px; height: 450px;
             margin: 0 auto; 
-            /* Deep Void Background with subtle noise */
             background-color: #020202;
             background-image: 
                 radial-gradient(circle at 50% 50%, #1a1a2e 0%, transparent 60%),
@@ -188,20 +185,20 @@
             border-radius: 4px;
         }
 
-        /* The Hitbox (Invisible but tracks the mouse) */
+        /* The Hitbox */
         #bridge-hitbox {
             fill: none;
             stroke: transparent;
-            stroke-width: 25px; /* The actual difficulty width */
-            pointer-events: stroke; /* Critical: Only interaction happens on the stroke */
+            stroke-width: 25px; 
+            pointer-events: stroke; 
         }
 
-        /* VISUAL LAYER 1: The Outer Glow (Smokey) */
+        /* VISUAL LAYER 1: The Outer Glow */
         #bridge-glow {
             fill: none;
             stroke: var(--spirit);
             stroke-width: 40px;
-            filter: url(#ectoplasm); /* The Distortion Filter */
+            filter: url(#ectoplasm); 
             opacity: 0.3;
             stroke-linecap: round;
         }
@@ -211,7 +208,7 @@
             fill: none;
             stroke: #fff;
             stroke-width: 15px;
-            stroke-dasharray: 20, 40; /* Dashed line */
+            stroke-dasharray: 20, 40; 
             filter: blur(4px);
             opacity: 0.6;
             animation: flowStream 2s linear infinite;
@@ -226,11 +223,8 @@
             filter: drop-shadow(0 0 5px #fff);
         }
 
-        @keyframes flowStream {
-            to { stroke-dashoffset: -60; }
-        }
+        @keyframes flowStream { to { stroke-dashoffset: -60; } }
 
-        /* The Soul Cursor */
         #spirit-cursor { 
             width: 16px; height: 16px; 
             background: #fff; 
@@ -241,10 +235,7 @@
             z-index: 20; 
             display: none; 
             mix-blend-mode: screen;
-            box-shadow: 
-                0 0 10px #fff, 
-                0 0 20px var(--spirit), 
-                0 0 40px var(--spirit);
+            box-shadow: 0 0 10px #fff, 0 0 20px var(--spirit), 0 0 40px var(--spirit);
             filter: url(#cursor-flicker);
         }
 
@@ -324,7 +315,7 @@
         <button class="back-btn" onclick="nav('hub')">Return to Hub</button>
     </div>
 
-   <div id="game3" class="screen hidden">
+    <div id="game3" class="screen hidden">
         <h2>The Spectral Bridge</h2>
         <p>Guide the soul across the abyss. The path is narrow and shifting.</p>
         
@@ -346,15 +337,10 @@
                     </filter>
                 </defs>
 
-                <path id="bridge-glow" 
-                      d="M 50 400 L 150 300 L 200 400 L 350 100 L 500 350 L 650 50 L 850 225" />
-
-                <path id="bridge-stream" 
-                      d="M 50 400 L 150 300 L 200 400 L 350 100 L 500 350 L 650 50 L 850 225" />
-
-                <path id="bridge-core-vis" 
-                      d="M 50 400 L 150 300 L 200 400 L 350 100 L 500 350 L 650 50 L 850 225" />
-
+                <path id="bridge-glow" d="M 50 400 L 150 300 L 200 400 L 350 100 L 500 350 L 650 50 L 850 225" />
+                <path id="bridge-stream" d="M 50 400 L 150 300 L 200 400 L 350 100 L 500 350 L 650 50 L 850 225" />
+                <path id="bridge-core-vis" d="M 50 400 L 150 300 L 200 400 L 350 100 L 500 350 L 650 50 L 850 225" />
+                
                 <path id="bridge-hitbox" 
                       d="M 50 400 L 150 300 L 200 400 L 350 100 L 500 350 L 650 50 L 850 225" 
                       onmouseenter="enterBridge()" 
@@ -362,6 +348,47 @@
             </svg>
         </div>
 
+        <button class="back-btn" onclick="nav('hub')">Return to Hub</button>
+    </div>
+
+    <div id="game5" class="screen hidden">
+        <h2>Specimen Feeding</h2>
+        <p>Input damage dealt. The hungriest specimen (Lowest HP) will retaliate.</p>
+        
+        <div class="vial-rack">
+            <div class="vial-unit">
+                <div class="vial-display">
+                    <img src="assets/vial-empty.png" class="vial-bg">
+                    <div class="vial-mask" id="mask-1"><img src="assets/vial-complete.png" class="vial-fg"></div>
+                </div>
+                <input type="number" id="dmg-1" value="0" oninput="updateVials()">
+            </div>
+            <div class="vial-unit">
+                <div class="vial-display">
+                    <img src="assets/vial-empty.png" class="vial-bg">
+                    <div class="vial-mask" id="mask-2"><img src="assets/vial-complete.png" class="vial-fg"></div>
+                </div>
+                <input type="number" id="dmg-2" value="0" oninput="updateVials()">
+            </div>
+            <div class="vial-unit">
+                <div class="vial-display">
+                    <img src="assets/vial-empty.png" class="vial-bg">
+                    <div class="vial-mask" id="mask-3"><img src="assets/vial-complete.png" class="vial-fg"></div>
+                </div>
+                <input type="number" id="dmg-3" value="0" oninput="updateVials()">
+            </div>
+            <div class="vial-unit">
+                <div class="vial-display">
+                    <img src="assets/vial-empty.png" class="vial-bg">
+                    <div class="vial-mask" id="mask-4"><img src="assets/vial-complete.png" class="vial-fg"></div>
+                </div>
+                <input type="number" id="dmg-4" value="0" oninput="updateVials()">
+            </div>
+        </div>
+
+        <button onclick="calculateAggro()">Identify Threat</button>
+        <div id="roper-res" style="min-height: 2em; margin-top:20px; font-size: 1.4rem; font-family: 'Cinzel'"></div>
+        
         <button class="back-btn" onclick="nav('hub')">Return to Hub</button>
     </div>
 
