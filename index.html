@@ -115,7 +115,7 @@
         .wheel-btn { width: 50px; height: 50px; padding: 0; border-radius: 50%; line-height: 50px; }
         #wheel-result { min-height: 60px; margin-top: 20px; font-family: 'Cinzel'; font-size: 1.8rem; color: #fff; text-shadow: 0 0 10px var(--gold-base); opacity: 0; transition: opacity 0.5s; }
 
-        /* --- GAME 2: DREDGES (FINAL FIXED) --- */
+        /* --- GAME 2: DREDGES (VISIBILITY FIX) --- */
         .grid-container {
             display: grid;
             grid-template-columns: repeat(3, 180px);
@@ -128,24 +128,25 @@
             width: 180px; height: 180px;
             position: relative; 
             cursor: crosshair;
-            overflow: hidden; 
+            overflow: hidden; /* This crops the square image to a circle */
             border-radius: 50%; 
         }
 
         .portal-img {
             width: 100%; height: 100%;
-            position: absolute; top: 0; left: 0; z-index: 5;
+            position: absolute; top: 0; left: 0; 
+            z-index: 5; /* Middle Layer */
             pointer-events: none;
             filter: drop-shadow(0 10px 10px rgba(0,0,0,0.8));
         }
 
-        /* FIX: Smaller size (70%) to fit inside the portal frame */
+        /* FIX: Z-Index 6 puts it ON TOP of the portal so it is definitely seen */
         .dretch-img {
             width: 70%; 
             height: 70%;
             position: absolute; 
             top: 15%; left: 15%; 
-            z-index: 2; 
+            z-index: 6; /* Top Layer */
             border-radius: 50%; 
             object-fit: cover; 
             transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -154,7 +155,6 @@
         }
         .dretch-active { transform: scale(1); }
 
-        /* FIX: More Dramatic Poison (Hard Light) */
         .poison-overlay {
             position: absolute; top: -10%; left: -10%; width: 120%; height: 120%;
             background: radial-gradient(circle, var(--poison-gas) 20%, transparent 70%);
@@ -169,7 +169,7 @@
             100% {opacity: 0; transform: scale(1.4); } 
         }
 
-        /* --- GAME 3: BRIDGE (HARD MODE) --- */
+        /* --- GAME 3: BRIDGE (THINNER) --- */
         .bridge-container {
             position: relative; width: 100%; max-width: 900px; height: 450px;
             margin: 0 auto; background: radial-gradient(circle at center, #111 0%, #000 100%);
@@ -177,20 +177,20 @@
             cursor: none; overflow: hidden; border-radius: 4px;
         }
 
-        /* Animated Path Glow - HARDER & THINNER */
+        /* FIX: Reduced stroke-width to 20px */
         #bridge-path {
             fill: none;
             stroke: var(--spirit);
-            stroke-width: 35px; /* Thinner */
+            stroke-width: 20px; 
             stroke-linecap: square; 
             stroke-linejoin: bevel; 
-            filter: blur(5px);
+            filter: blur(4px);
             opacity: 0.2;
             animation: pulsePath 3s infinite alternate;
         }
         @keyframes pulsePath { 
-            from { opacity: 0.15; stroke-width: 35px; } 
-            to { opacity: 0.3; stroke-width: 40px; } 
+            from { opacity: 0.15; stroke-width: 20px; } 
+            to { opacity: 0.3; stroke-width: 25px; } 
         }
 
         #bridge-core { fill: none; stroke: rgba(255,255,255,0.8); stroke-width: 1px; stroke-dasharray: 5, 15; opacity: 0.5; }
