@@ -32,7 +32,7 @@
             min-height: 100vh;
             margin: 0;
             user-select: none;
-            overflow-y: auto; /* Allow scroll if screen is small */
+            overflow-y: auto;
         }
 
         body::after {
@@ -115,8 +115,7 @@
         .wheel-btn { width: 50px; height: 50px; padding: 0; border-radius: 50%; line-height: 50px; }
         #wheel-result { min-height: 60px; margin-top: 20px; font-family: 'Cinzel'; font-size: 1.8rem; color: #fff; text-shadow: 0 0 10px var(--gold-base); opacity: 0; transition: opacity 0.5s; }
 
-        /* --- GAME 2: DREDGES (FIXED) --- */
-       /* --- GAME 2: DREDGES (SIZING FIX) --- */
+        /* --- GAME 2: DREDGES (FINAL FIXED) --- */
         .grid-container {
             display: grid;
             grid-template-columns: repeat(3, 180px);
@@ -129,7 +128,6 @@
             width: 180px; height: 180px;
             position: relative; 
             cursor: crosshair;
-            /* Clip allows us to hide anything that bleeds out just in case */
             overflow: hidden; 
             border-radius: 50%; 
         }
@@ -146,8 +144,8 @@
             width: 70%; 
             height: 70%;
             position: absolute; 
-            top: 15%; left: 15%; /* (100 - 70) / 2 = 15% to center */
-            z-index: 2; /* Behind the portal frame */
+            top: 15%; left: 15%; 
+            z-index: 2; 
             border-radius: 50%; 
             object-fit: cover; 
             transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -155,12 +153,13 @@
             filter: drop-shadow(0 0 10px rgba(0,0,0,0.8));
         }
         .dretch-active { transform: scale(1); }
-        /* FIX: More Dramatic Poison */
+
+        /* FIX: More Dramatic Poison (Hard Light) */
         .poison-overlay {
             position: absolute; top: -10%; left: -10%; width: 120%; height: 120%;
             background: radial-gradient(circle, var(--poison-gas) 20%, transparent 70%);
             opacity: 0; z-index: 10; pointer-events: none;
-            mix-blend-mode: hard-light; /* Brighter blend */
+            mix-blend-mode: hard-light; 
             filter: blur(8px);
         }
         .poison-active { animation: gasExplode 1s ease-out forwards; }
@@ -170,20 +169,21 @@
             100% {opacity: 0; transform: scale(1.4); } 
         }
 
-        /* --- GAME 3: BRIDGE --- */
+        /* --- GAME 3: BRIDGE (HARD MODE) --- */
         .bridge-container {
             position: relative; width: 100%; max-width: 900px; height: 450px;
             margin: 0 auto; background: radial-gradient(circle at center, #111 0%, #000 100%);
             border: 1px solid #333; box-shadow: inset 0 0 50px #000;
             cursor: none; overflow: hidden; border-radius: 4px;
         }
-       /* Animated Path Glow - HARDER & THINNER */
+
+        /* Animated Path Glow - HARDER & THINNER */
         #bridge-path {
             fill: none;
             stroke: var(--spirit);
-            stroke-width: 35px; /* Thinner (was 55px) */
-            stroke-linecap: square; /* Sharper ends */
-            stroke-linejoin: bevel; /* Sharp corners instead of rounded */
+            stroke-width: 35px; /* Thinner */
+            stroke-linecap: square; 
+            stroke-linejoin: bevel; 
             filter: blur(5px);
             opacity: 0.2;
             animation: pulsePath 3s infinite alternate;
@@ -192,6 +192,7 @@
             from { opacity: 0.15; stroke-width: 35px; } 
             to { opacity: 0.3; stroke-width: 40px; } 
         }
+
         #bridge-core { fill: none; stroke: rgba(255,255,255,0.8); stroke-width: 1px; stroke-dasharray: 5, 15; opacity: 0.5; }
         #spirit-cursor { width: 12px; height: 12px; background: #fff; border-radius: 50%; position: absolute; pointer-events: none; box-shadow: 0 0 10px #fff, 0 0 20px var(--spirit); transform: translate(-50%, -50%); z-index: 20; display: none; mix-blend-mode: screen; }
         .fail-state { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; box-shadow: inset 0 0 100px var(--blood) !important; }
@@ -260,7 +261,7 @@
         <button class="back-btn" onclick="nav('hub')">Return to Hub</button>
     </div>
 
-<div id="game3" class="screen hidden">
+    <div id="game3" class="screen hidden">
         <h2>The Spectral Bridge</h2>
         <p>Guide the soul. The path is treacherous and narrow.</p>
         
@@ -279,9 +280,6 @@
                       pointer-events="none" />
             </svg>
         </div>
-
-        <button class="back-btn" onclick="nav('hub')">Return to Hub</button>
-    </div>
 
         <button class="back-btn" onclick="nav('hub')">Return to Hub</button>
     </div>
@@ -362,7 +360,7 @@
             }, 5000); 
         }
 
-        // --- GAME 2: DREDGES (FIXED) ---
+        // --- GAME 2: DREDGES ---
         let currentDredgeIdx = -1;
         function initDredges() {
             const grid = document.getElementById('dredge-grid');
