@@ -5,6 +5,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Cursed Carnival</title>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+    
+    <link rel="preload" as="image" href="assets/bg.png">
+    <link rel="preload" as="image" href="assets/wheel.png">
+    <link rel="preload" as="image" href="assets/pointer.png">
+    <link rel="preload" as="image" href="assets/dretch.png">
+    <link rel="preload" as="image" href="assets/portal.png">
+    <link rel="preload" as="image" href="assets/vial-empty.png">
+    <link rel="preload" as="image" href="assets/vial-complete.png">
+
     <style>
         :root {
             --bg-void: #050505;
@@ -115,7 +124,7 @@
         .wheel-btn { width: 50px; height: 50px; padding: 0; border-radius: 50%; line-height: 50px; }
         #wheel-result { min-height: 60px; margin-top: 20px; font-family: 'Cinzel'; font-size: 1.8rem; color: #fff; text-shadow: 0 0 10px var(--gold-base); opacity: 0; transition: opacity 0.5s; }
 
-        /* --- GAME 2: DREDGES (FINAL FIX) --- */
+        /* --- GAME 2: DREDGES --- */
         .grid-container {
             display: grid;
             grid-template-columns: repeat(3, 180px);
@@ -180,10 +189,13 @@
             background-size: 100% 100%, 40px 40px, 40px 40px;
             border: 1px solid #333; 
             box-shadow: inset 0 0 100px #000;
-            cursor: none; 
             overflow: hidden; 
             border-radius: 4px;
         }
+
+        /* Logic for "No Mouse" */
+        .cursor-none { cursor: none; }
+        .cursor-pointer { cursor: pointer; }
 
         /* The Hitbox */
         #bridge-hitbox {
@@ -193,7 +205,7 @@
             pointer-events: stroke; 
         }
 
-        /* VISUAL LAYER 1: The Outer Glow */
+        /* Visual Layers */
         #bridge-glow {
             fill: none;
             stroke: var(--spirit);
@@ -201,9 +213,9 @@
             filter: url(#ectoplasm); 
             opacity: 0.3;
             stroke-linecap: round;
+            transition: stroke 0.3s;
         }
 
-        /* VISUAL LAYER 2: The Flowing Stream */
         #bridge-stream {
             fill: none;
             stroke: #fff;
@@ -214,7 +226,6 @@
             animation: flowStream 2s linear infinite;
         }
 
-        /* VISUAL LAYER 3: The Core Energy */
         #bridge-core-vis {
             fill: none;
             stroke: #fff;
@@ -225,6 +236,7 @@
 
         @keyframes flowStream { to { stroke-dashoffset: -60; } }
 
+        /* The Spirit Cursor */
         #spirit-cursor { 
             width: 16px; height: 16px; 
             background: #fff; 
@@ -243,6 +255,8 @@
             animation: glitch 0.2s cubic-bezier(.25, .46, .45, .94) both infinite; 
             box-shadow: inset 0 0 150px var(--blood) !important; 
         }
+        .fail-state #bridge-glow { stroke: var(--blood); opacity: 0.8; }
+        .fail-state #bridge-stream { stroke: var(--blood-bright); }
         
         @keyframes glitch { 
             0% { transform: translate(0); } 
@@ -251,6 +265,24 @@
             60% { transform: translate(2px, 2px); } 
             80% { transform: translate(2px, -2px); } 
             100% { transform: translate(0); } 
+        }
+
+        /* Start/End Nodes */
+        .node { fill: var(--gold-base); cursor: pointer; transition: fill 0.3s, r 0.3s; }
+        .node:hover { fill: #fff; r: 18px; }
+        .start-active { fill: #39ff14; filter: drop-shadow(0 0 10px #39ff14); animation: pulse 1s infinite; }
+        .end-zone { fill: var(--spirit); opacity: 0.5; }
+        
+        @keyframes pulse { 0% { r: 15px; opacity: 1; } 50% { r: 20px; opacity: 0.6; } 100% { r: 15px; opacity: 1; } }
+
+        #bridge-overlay-ui {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 30; text-align: center; pointer-events: none;
+        }
+        .overlay-msg {
+            font-family: 'Cinzel'; font-size: 3rem; 
+            text-shadow: 0 0 20px #000;
+            display: none;
         }
 
         /* --- GAME 5: ROPERS --- */
@@ -317,11 +349,16 @@
 
     <div id="game3" class="screen hidden">
         <h2>The Spectral Bridge</h2>
-        <p>Guide the soul across the abyss. The path is narrow and shifting.</p>
+        <p>Click the <span style="color:#39ff14">Green Orb</span> to bind the soul. Guide it to the Blue Portal.</p>
         
-        <div class="bridge-container" id="bridge-ui">
+        <div class="bridge-container cursor-pointer" id="bridge-ui">
             <div id="spirit-cursor"></div>
-            <div id="fail-msg">FALLEN</div>
+            
+            <div id="bridge-overlay-ui">
+                <div id="fail-msg" class="overlay-msg" style="color: var(--blood-bright)">FALLEN</div>
+                <div id="win-msg" class="overlay-msg" style="color: var(--gold-highlight)">ASCENDED</div>
+                <button id="reset-bridge-btn" onclick="resetBridge()" style="display:none; pointer-events: auto;">Resurrect Soul</button>
+            </div>
             
             <svg width="100%" height="100%" viewBox="0 0 900 450" preserveAspectRatio="none">
                 <defs>
@@ -342,9 +379,13 @@
                 <path id="bridge-core-vis" d="M 50 400 L 150 300 L 200 400 L 350 100 L 500 350 L 650 50 L 850 225" />
                 
                 <path id="bridge-hitbox" 
-                      d="M 50 400 L 150 300 L 200 400 L 350 100 L 500 350 L 650 50 L 850 225" 
-                      onmouseenter="enterBridge()" 
-                      onmouseleave="fallOffBridge()" />
+                      d="M 50 400 L 150 300 L 200 400 L 350 100 L 500 350 L 650 50 L 850 225"
+                      onmouseenter="confirmOnPath()"
+                      onmouseleave="confirmOffPath()" />
+
+                <circle cx="50" cy="400" r="15" class="node start-active" id="start-node" onclick="beginTracing(event)" />
+                
+                <circle cx="850" cy="225" r="20" class="node end-zone" id="end-node" onmouseenter="checkWin()" />
             </svg>
         </div>
 
@@ -394,6 +435,11 @@
 
     <script>
         // --- NAVIGATION & INIT ---
+        window.onload = function() {
+            // OPTIMIZATION: Build the Dredge grid immediately so it doesn't lag later
+            initDredges();
+        };
+
         function nav(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
             const active = document.getElementById(id);
@@ -401,8 +447,7 @@
             active.style.animation = 'none';
             active.offsetHeight; /* trigger reflow */
             active.style.animation = 'fadeIn 0.6s forwards ease-out';
-            if(id === 'game2') initDredges();
-            if(id === 'game3') initBridge();
+            if(id === 'game3') resetBridge();
         }
 
         // --- GAME 1: WHEEL ---
@@ -480,29 +525,89 @@
             setTimeout(() => poison.classList.remove('poison-active'), 1000);
         }
 
-        // --- GAME 3: BRIDGE ---
-        let bridgeActive = false;
-        function initBridge() {
-            const ui = document.getElementById('bridge-ui');
+        // --- GAME 3: BRIDGE (UPDATED) ---
+        let tracingActive = false;
+        let isOnPath = false;
+        let hasWon = false;
+
+        // Bridge Mouse Tracking
+        document.getElementById('bridge-ui').addEventListener('mousemove', (e) => {
+            if (!tracingActive) return;
+            const rect = document.getElementById('bridge-ui').getBoundingClientRect();
             const cursor = document.getElementById('spirit-cursor');
-            ui.addEventListener('mousemove', (e) => {
-                const rect = ui.getBoundingClientRect();
-                cursor.style.left = (e.clientX - rect.left) + 'px';
-                cursor.style.top = (e.clientY - rect.top) + 'px';
-            });
-        }
-        function enterBridge() {
-            bridgeActive = true;
-            document.getElementById('spirit-cursor').style.display = 'block';
+            cursor.style.left = (e.clientX - rect.left) + 'px';
+            cursor.style.top = (e.clientY - rect.top) + 'px';
+        });
+
+        function resetBridge() {
+            tracingActive = false;
+            isOnPath = false;
+            hasWon = false;
+            
+            // Visual Resets
             document.getElementById('bridge-ui').classList.remove('fail-state');
+            document.getElementById('bridge-ui').classList.remove('cursor-none');
+            document.getElementById('bridge-ui').classList.add('cursor-pointer');
+            
+            document.getElementById('spirit-cursor').style.display = 'none';
             document.getElementById('fail-msg').style.display = 'none';
+            document.getElementById('win-msg').style.display = 'none';
+            document.getElementById('reset-bridge-btn').style.display = 'none';
+            document.getElementById('start-node').classList.add('start-active');
         }
-        function fallOffBridge() {
-            if (!bridgeActive) return;
-            bridgeActive = false;
+
+        function beginTracing(e) {
+            if (hasWon) return;
+            tracingActive = true;
+            isOnPath = true; // They clicked start, so they are safe for a split second
+
+            // Hide system mouse, show spirit cursor
+            const ui = document.getElementById('bridge-ui');
+            ui.classList.add('cursor-none');
+            ui.classList.remove('cursor-pointer');
+            
+            const cursor = document.getElementById('spirit-cursor');
+            cursor.style.display = 'block';
+            
+            // Snap cursor visual to mouse immediately
+            const rect = ui.getBoundingClientRect();
+            cursor.style.left = (e.clientX - rect.left) + 'px';
+            cursor.style.top = (e.clientY - rect.top) + 'px';
+
+            document.getElementById('start-node').classList.remove('start-active');
+        }
+
+        function confirmOnPath() {
+            if (!tracingActive) return;
+            isOnPath = true;
+        }
+
+        function confirmOffPath() {
+            if (!tracingActive || hasWon) return;
+            isOnPath = false;
+            // Small buffer or instant fail? Instant fail for "Hard Mode"
+            triggerFail();
+        }
+
+        function triggerFail() {
+            tracingActive = false;
             document.getElementById('bridge-ui').classList.add('fail-state');
             document.getElementById('fail-msg').style.display = 'block';
-            document.getElementById('spirit-cursor').style.display = 'none';
+            document.getElementById('reset-bridge-btn').style.display = 'inline-block';
+            
+            // Bring back normal mouse to click reset
+            document.getElementById('bridge-ui').classList.remove('cursor-none');
+            document.getElementById('bridge-ui').classList.add('cursor-pointer');
+        }
+
+        function checkWin() {
+            if (tracingActive && isOnPath) {
+                hasWon = true;
+                tracingActive = false;
+                document.getElementById('win-msg').style.display = 'block';
+                document.getElementById('bridge-ui').classList.remove('cursor-none');
+                document.getElementById('bridge-ui').classList.add('cursor-pointer');
+            }
         }
 
         // --- GAME 5: ROPERS ---
