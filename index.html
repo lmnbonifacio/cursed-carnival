@@ -116,13 +116,36 @@
         }
         .back-btn:hover { color: #fff; border-color: #fff; background: rgba(255,255,255,0.1); }
 
-        /* --- GAME 1: WHEEL --- */
+        /* --- GAME 1: WHEEL OF HORRORS --- */
         .wheel-stage { position: relative; width: 500px; height: 500px; margin: 0 auto 30px auto; }
         #wheel-img { width: 100%; height: 100%; transition: transform 5s cubic-bezier(0.2, 0.8, 0.2, 1); filter: drop-shadow(0 0 30px rgba(0,0,0,0.9)); }
         #pointer-img { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 80px; z-index: 10; filter: drop-shadow(0 5px 10px black); }
         .wheel-controls { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
         .wheel-btn { width: 50px; height: 50px; padding: 0; border-radius: 50%; line-height: 50px; }
-        #wheel-result { min-height: 60px; margin-top: 20px; font-family: 'Cinzel'; font-size: 1.8rem; color: #fff; text-shadow: 0 0 10px var(--gold-base); opacity: 0; transition: opacity 0.5s; }
+        
+        /* Modal Popup */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 100;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+            backdrop-filter: blur(5px);
+        }
+        .modal-active { opacity: 1; pointer-events: auto; }
+        .modal-content {
+            background: #111; border: 2px solid var(--gold-base);
+            padding: 40px; max-width: 600px; text-align: center;
+            box-shadow: 0 0 50px rgba(197, 160, 89, 0.2);
+            transform: scale(0.8); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .modal-active .modal-content { transform: scale(1); }
+        .modal-title { font-family: 'Cinzel'; font-size: 2.5rem; color: var(--gold-highlight); margin-bottom: 20px; }
+        .modal-desc { font-family: 'Playfair Display'; font-size: 1.2rem; line-height: 1.6; color: #ccc; margin-bottom: 30px; }
+        .close-modal {
+            background: transparent; border: 1px solid #444; color: #888;
+            padding: 10px 30px; text-transform: uppercase; letter-spacing: 2px;
+        }
+        .close-modal:hover { border-color: #fff; color: #fff; }
 
         /* --- GAME 2: DREDGES --- */
         .grid-container {
@@ -132,7 +155,6 @@
             justify-content: center;
             margin: 20px auto;
         }
-
         .dredge-cell {
             width: 180px; height: 180px;
             position: relative; 
@@ -140,40 +162,25 @@
             overflow: hidden; 
             border-radius: 50%; 
         }
-
         .portal-img {
-            width: 100%; height: 100%;
-            position: absolute; top: 0; left: 0; 
-            z-index: 5; 
-            pointer-events: none;
+            width: 100%; height: 100%; position: absolute; top: 0; left: 0; 
+            z-index: 5; pointer-events: none;
             filter: drop-shadow(0 10px 10px rgba(0,0,0,0.8));
         }
-
         .dretch-img {
-            width: 70%; height: 70%;
-            position: absolute; 
-            top: 15%; left: 15%; 
-            z-index: 6; 
-            border-radius: 50%; 
-            object-fit: cover; 
+            width: 70%; height: 70%; position: absolute; 
+            top: 15%; left: 15%; z-index: 6; 
+            border-radius: 50%; object-fit: cover; 
             transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             transform: scale(0);
             filter: drop-shadow(0 0 10px rgba(0,0,0,0.8));
         }
         .dretch-active { transform: scale(1); }
-
         .poison-overlay {
             position: absolute; top: -10%; left: -10%; width: 120%; height: 120%;
             background: radial-gradient(circle, var(--poison-gas) 20%, transparent 70%);
             opacity: 0; z-index: 10; pointer-events: none;
-            mix-blend-mode: hard-light; 
-            filter: blur(8px);
-        }
-        .poison-active { animation: gasExplode 1s ease-out forwards; }
-        @keyframes gasExplode { 
-            0% {opacity: 0; transform: scale(0.5); } 
-            20% { opacity: 0.9; transform: scale(1.1); } 
-            100% {opacity: 0; transform: scale(1.4); } 
+            mix-blend-mode: hard-light; filter: blur(8px);
         }
 
         /* --- GAME 3: THE ABYSSAL PATH --- */
@@ -285,9 +292,9 @@
             display: none;
         }
 
-        /* --- GAME 5: ROPERS --- */
+        /* --- GAME 5: ROPERS (Updated) --- */
         .vial-rack { display: flex; justify-content: center; gap: 30px; margin: 40px 0; perspective: 1000px; flex-wrap: wrap;}
-        .vial-unit { display: flex; flex-direction: column; align-items: center; width: 120px; transition: transform 0.3s; }
+        .vial-unit { display: flex; flex-direction: column; align-items: center; width: 120px; transition: transform 0.3s, opacity 0.3s; }
         .vial-unit:hover { transform: translateZ(20px); }
         .vial-display { width: 120px; height: 240px; position: relative; }
         .vial-bg { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; filter: drop-shadow(0 10px 10px #000); opacity: 0.8; }
@@ -295,7 +302,11 @@
         .vial-fg { width: 120px; height: 240px; position: absolute; bottom: 0; left: 0; }
         .vial-unit input { background: rgba(0,0,0,0.5); border: none; border-bottom: 2px solid var(--gold-shadow); color: var(--gold-highlight); font-family: 'Cinzel'; font-size: 1.5rem; text-align: center; width: 80px; margin-top: 15px; padding: 5px; transition: 0.3s; }
         .vial-unit input:focus { outline: none; border-color: var(--gold-highlight); background: rgba(0,0,0,0.8); }
-        .attacking-text { color: var(--blood-bright); font-weight: bold; text-shadow: 0 0 10px var(--blood); }
+        
+        /* Auto-Highlight Logic Classes */
+        .vial-safe { opacity: 0.5; transform: scale(0.95); }
+        .vial-danger .vial-mask { filter: drop-shadow(0 0 25px var(--blood-bright)); }
+        .vial-danger input { border-color: var(--blood-bright); color: var(--blood-bright); font-weight: bold; }
 
     </style>
 </head>
@@ -305,7 +316,7 @@
         <h1>The Cursed Carnival</h1>
         <p>Select the encounter to begin the torment.</p>
         <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
-            <button onclick="nav('game1')">I. Wheel of Fortune</button>
+            <button onclick="nav('game1')">I. Wheel of Horrors</button>
             <button onclick="nav('game2')">II. Nine Dredges</button>
             <button onclick="nav('game3')">III. The Spectral Bridge</button>
             <button onclick="nav('game5')">V. The Ropers</button>
@@ -313,8 +324,8 @@
     </div>
 
     <div id="game1" class="screen hidden">
-        <h2>Wheel of Fortune</h2>
-        <p>Cast the physical die (1d8). Consult fate below.</p>
+        <h2>Wheel of Horrors</h2>
+        <p>Cast the physical die (1d8). The carnival decides your fate.</p>
         
         <div class="wheel-stage">
             <img src="assets/pointer.png" id="pointer-img" alt="Pointer">
@@ -332,18 +343,21 @@
             <button class="wheel-btn" onclick="spinWheel(8)">8</button>
         </div>
 
-        <div id="wheel-result"></div>
         <button class="back-btn" onclick="nav('hub')">Return to Hub</button>
+
+        <div id="horror-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div id="m-title" class="modal-title">TITLE</div>
+                <div id="m-desc" class="modal-desc">Description goes here.</div>
+                <button class="close-modal" onclick="closeModal()">Accept Fate</button>
+            </div>
+        </div>
     </div>
 
     <div id="game2" class="screen hidden">
         <h2>Whack-a-Dredge</h2>
-        <p>Attack Hit: Click Portal. <br>Attack Miss: Click "Missed Attack".</p>
-        
+        <p>Attack Hit: Click Portal. <br>Attack Miss: Describe the failure.</p>
         <div class="grid-container" id="dredge-grid"></div>
-
-        <button onclick="triggerPoison()" style="border-color: #39ff14; color: #39ff14; margin-top: 20px;">Attack Missed (Trigger Gas)</button>
-        <br>
         <button class="back-btn" onclick="nav('hub')">Return to Hub</button>
     </div>
 
@@ -367,19 +381,18 @@
                         <feDisplacementMap in="SourceGraphic" in2="noise" scale="15" />
                         <feGaussianBlur stdDeviation="3" />
                     </filter>
-                    
                     <filter id="cursor-flicker">
                         <feTurbulence type="fractalNoise" baseFrequency="0.1" numOctaves="2" />
                         <feDisplacementMap in="SourceGraphic" scale="3" />
                     </filter>
                 </defs>
 
-                <path id="bridge-glow" d="M 50 400 L 150 300 L 200 400 L 350 100 L 500 350 L 650 50 L 850 225" />
-                <path id="bridge-stream" d="M 50 400 L 150 300 L 200 400 L 350 100 L 500 350 L 650 50 L 850 225" />
-                <path id="bridge-core-vis" d="M 50 400 L 150 300 L 200 400 L 350 100 L 500 350 L 650 50 L 850 225" />
+                <path id="bridge-glow" d="M 50 400 C 80 300, 150 150, 200 150 S 250 350, 300 400 S 400 300, 500 200 S 600 50, 650 50 S 800 200, 850 225" />
+                <path id="bridge-stream" d="M 50 400 C 80 300, 150 150, 200 150 S 250 350, 300 400 S 400 300, 500 200 S 600 50, 650 50 S 800 200, 850 225" />
+                <path id="bridge-core-vis" d="M 50 400 C 80 300, 150 150, 200 150 S 250 350, 300 400 S 400 300, 500 200 S 600 50, 650 50 S 800 200, 850 225" />
                 
                 <path id="bridge-hitbox" 
-                      d="M 50 400 L 150 300 L 200 400 L 350 100 L 500 350 L 650 50 L 850 225"
+                      d="M 50 400 C 80 300, 150 150, 200 150 S 250 350, 300 400 S 400 300, 500 200 S 600 50, 650 50 S 800 200, 850 225"
                       onmouseenter="confirmOnPath()"
                       onmouseleave="confirmOffPath()" />
 
@@ -394,31 +407,31 @@
 
     <div id="game5" class="screen hidden">
         <h2>Specimen Feeding</h2>
-        <p>Input damage dealt. The hungriest specimen (Lowest HP) will retaliate.</p>
+        <p>Input damage dealt. The <span style="color:var(--blood-bright)">Hungriest Specimen</span> (Lowest Damage) will glow.</p>
         
         <div class="vial-rack">
-            <div class="vial-unit">
+            <div class="vial-unit" id="vial-unit-1">
                 <div class="vial-display">
                     <img src="assets/vial-empty.png" class="vial-bg">
                     <div class="vial-mask" id="mask-1"><img src="assets/vial-complete.png" class="vial-fg"></div>
                 </div>
                 <input type="number" id="dmg-1" value="0" oninput="updateVials()">
             </div>
-            <div class="vial-unit">
+            <div class="vial-unit" id="vial-unit-2">
                 <div class="vial-display">
                     <img src="assets/vial-empty.png" class="vial-bg">
                     <div class="vial-mask" id="mask-2"><img src="assets/vial-complete.png" class="vial-fg"></div>
                 </div>
                 <input type="number" id="dmg-2" value="0" oninput="updateVials()">
             </div>
-            <div class="vial-unit">
+            <div class="vial-unit" id="vial-unit-3">
                 <div class="vial-display">
                     <img src="assets/vial-empty.png" class="vial-bg">
                     <div class="vial-mask" id="mask-3"><img src="assets/vial-complete.png" class="vial-fg"></div>
                 </div>
                 <input type="number" id="dmg-3" value="0" oninput="updateVials()">
             </div>
-            <div class="vial-unit">
+            <div class="vial-unit" id="vial-unit-4">
                 <div class="vial-display">
                     <img src="assets/vial-empty.png" class="vial-bg">
                     <div class="vial-mask" id="mask-4"><img src="assets/vial-complete.png" class="vial-fg"></div>
@@ -426,17 +439,12 @@
                 <input type="number" id="dmg-4" value="0" oninput="updateVials()">
             </div>
         </div>
-
-        <button onclick="calculateAggro()">Identify Threat</button>
-        <div id="roper-res" style="min-height: 2em; margin-top:20px; font-size: 1.4rem; font-family: 'Cinzel'"></div>
-        
         <button class="back-btn" onclick="nav('hub')">Return to Hub</button>
     </div>
 
     <script>
         // --- NAVIGATION & INIT ---
         window.onload = function() {
-            // OPTIMIZATION: Build the Dredge grid immediately so it doesn't lag later
             initDredges();
         };
 
@@ -450,26 +458,42 @@
             if(id === 'game3') resetBridge();
         }
 
-        // --- GAME 1: WHEEL ---
-        const outcomes = ["Poison Darts", "Psychic Scream", "Fog Cloud", "Gravity Well", "Necrotic Rot", "Silence", "Mirror Image"];
+        // --- GAME 1: WHEEL OF HORRORS ---
+        const horrorOutcomes = [
+            { title: "The Skull", desc: "A flurry of poison darts erupts from the walls. <br><br><strong>DEX Save DC 15</strong> or take <strong>4d6 Poison</strong> damage." },
+            { title: "Darkness", desc: "Magical darkness fills the room. You are blinded for 1 minute. Darkvision does not penetrate this gloom." },
+            { title: "Silence", desc: "A sphere of absolute silence centers on the party. No Verbal components can be used." },
+            { title: "Gravity Well", desc: "The floor becomes difficult terrain. All movement speeds are halved." },
+            { title: "Psychic Scream", desc: "A high-pitched ringing shatters your concentration. <br><br><strong>INT Save DC 14</strong> or take <strong>3d8 Psychic</strong> damage." },
+            { title: "Mirror Image", desc: "A duplicate of the boss appears. Attacks against it have a 50% chance to miss." },
+            { title: "Necrotic Rot", desc: "Healing spells cast within the room heal for half the amount." },
+            { title: "The Heart", desc: "<span style='color:var(--gold-highlight)'>A moment of respite.</span><br>The party regains <strong>2d8 + 4 HP</strong>." }
+        ];
+
         let currentDeg = 0;
         function spinWheel(val) {
             const wheel = document.getElementById('wheel-img');
-            const resDiv = document.getElementById('wheel-result');
-            const extraSpins = 1080 + (val * 45); 
-            const randomOffset = Math.floor(Math.random() * 20);
-            currentDeg += extraSpins + randomOffset;
-            wheel.style.transform = `rotate(${currentDeg}deg)`;
-            resDiv.style.opacity = '0'; 
+            const sliceDeg = 45;
+            const targetDeg = (val - 1) * sliceDeg; 
+            const jitter = Math.floor(Math.random() * 20) + 10; 
+            currentDeg += 1080 + targetDeg + jitter;
+            
+            wheel.style.transform = `rotate(-${currentDeg}deg)`; 
+            
             setTimeout(() => {
-                resDiv.style.opacity = '1';
-                if (val === 8) {
-                    resDiv.innerHTML = "<span style='color:var(--gold-highlight); text-shadow:0 0 20px var(--gold-highlight)'>✨ THE GATE OPENS ✨</span>";
-                } else {
-                    const bad = outcomes[Math.floor(Math.random() * outcomes.length)];
-                    resDiv.innerHTML = `Rolled ${val}: <span style='color:var(--blood-bright)'>${bad}</span>`;
-                }
+                showModal(val);
             }, 5000); 
+        }
+
+        function showModal(val) {
+            const data = horrorOutcomes[val - 1];
+            document.getElementById('m-title').innerHTML = data.title;
+            document.getElementById('m-desc').innerHTML = data.desc;
+            document.getElementById('horror-modal').classList.add('modal-active');
+        }
+
+        function closeModal() {
+            document.getElementById('horror-modal').classList.remove('modal-active');
         }
 
         // --- GAME 2: DREDGES ---
@@ -517,20 +541,11 @@
             setTimeout(spawnDredge, 500);
         }
 
-        function triggerPoison() {
-            if(currentDredgeIdx === -1) return;
-            const cell = document.getElementById(`cell-${currentDredgeIdx}`);
-            const poison = cell.querySelector('.poison-overlay');
-            poison.classList.add('poison-active');
-            setTimeout(() => poison.classList.remove('poison-active'), 1000);
-        }
-
         // --- GAME 3: BRIDGE (UPDATED) ---
         let tracingActive = false;
         let isOnPath = false;
         let hasWon = false;
 
-        // Bridge Mouse Tracking
         document.getElementById('bridge-ui').addEventListener('mousemove', (e) => {
             if (!tracingActive) return;
             const rect = document.getElementById('bridge-ui').getBoundingClientRect();
@@ -543,12 +558,9 @@
             tracingActive = false;
             isOnPath = false;
             hasWon = false;
-            
-            // Visual Resets
             document.getElementById('bridge-ui').classList.remove('fail-state');
             document.getElementById('bridge-ui').classList.remove('cursor-none');
             document.getElementById('bridge-ui').classList.add('cursor-pointer');
-            
             document.getElementById('spirit-cursor').style.display = 'none';
             document.getElementById('fail-msg').style.display = 'none';
             document.getElementById('win-msg').style.display = 'none';
@@ -559,21 +571,15 @@
         function beginTracing(e) {
             if (hasWon) return;
             tracingActive = true;
-            isOnPath = true; // They clicked start, so they are safe for a split second
-
-            // Hide system mouse, show spirit cursor
+            isOnPath = true; 
             const ui = document.getElementById('bridge-ui');
             ui.classList.add('cursor-none');
             ui.classList.remove('cursor-pointer');
-            
             const cursor = document.getElementById('spirit-cursor');
             cursor.style.display = 'block';
-            
-            // Snap cursor visual to mouse immediately
             const rect = ui.getBoundingClientRect();
             cursor.style.left = (e.clientX - rect.left) + 'px';
             cursor.style.top = (e.clientY - rect.top) + 'px';
-
             document.getElementById('start-node').classList.remove('start-active');
         }
 
@@ -585,55 +591,7 @@
         function confirmOffPath() {
             if (!tracingActive || hasWon) return;
             isOnPath = false;
-            // Small buffer or instant fail? Instant fail for "Hard Mode"
             triggerFail();
         }
 
-        function triggerFail() {
-            tracingActive = false;
-            document.getElementById('bridge-ui').classList.add('fail-state');
-            document.getElementById('fail-msg').style.display = 'block';
-            document.getElementById('reset-bridge-btn').style.display = 'inline-block';
-            
-            // Bring back normal mouse to click reset
-            document.getElementById('bridge-ui').classList.remove('cursor-none');
-            document.getElementById('bridge-ui').classList.add('cursor-pointer');
-        }
-
-        function checkWin() {
-            if (tracingActive && isOnPath) {
-                hasWon = true;
-                tracingActive = false;
-                document.getElementById('win-msg').style.display = 'block';
-                document.getElementById('bridge-ui').classList.remove('cursor-none');
-                document.getElementById('bridge-ui').classList.add('cursor-pointer');
-            }
-        }
-
-        // --- GAME 5: ROPERS ---
-        function updateVials() {
-            const maxHP = 50; 
-            for(let i=1; i<=4; i++) {
-                const val = parseInt(document.getElementById(`dmg-${i}`).value) || 0;
-                let pct = (val / maxHP) * 100;
-                if(pct > 100) pct = 100;
-                document.getElementById(`mask-${i}`).style.height = pct + '%';
-            }
-        }
-        function calculateAggro() {
-            const dmg = [
-                parseInt(document.getElementById('dmg-1').value) || 0,
-                parseInt(document.getElementById('dmg-2').value) || 0,
-                parseInt(document.getElementById('dmg-3').value) || 0,
-                parseInt(document.getElementById('dmg-4').value) || 0
-            ];
-            const min = Math.min(...dmg);
-            const res = document.getElementById('roper-res');
-            if (min === 0 && dmg.every(d => d === 0)) { res.innerHTML = "No damage recorded."; return; }
-            let attackers = [];
-            dmg.forEach((d, i) => { if (d === min) attackers.push(i + 1); });
-            res.innerHTML = `Specimen <span class="attacking-text">${attackers.join(', ')}</span> Enraged (Lowest HP: ${min})`;
-        }
-    </script>
-</body>
-</html>
+        function trigger
