@@ -439,7 +439,6 @@
 
     <script>
         // --- NAVIGATION ---
-        // Attached to window to prevent scope errors
         window.nav = function(id) {
             document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
             const active = document.getElementById(id);
@@ -449,31 +448,44 @@
                 active.offsetHeight; /* trigger reflow */
                 active.style.animation = 'fadeIn 0.6s forwards ease-out';
                 if(id === 'game3') resetBridge();
-            } else {
-                console.error("Game ID not found:", id);
             }
         }
 
-        // --- GAME 1: WHEEL OF HORRORS ---
+        // --- GAME 1: WHEEL OF HORRORS (ANGLES MAPPED) ---
+        // Skull is Slice 5 (202.5 deg). Heart is Slice 3 (112.5 deg).
+        // The array is ordered by Button Number (1-8).
         const horrorOutcomes = [
-            { title: "The Skull", desc: "A flurry of poison darts erupts from the walls. <br><br><strong>DEX Save DC 15</strong> or take <strong>4d6 Poison</strong> damage." },
-            { title: "Darkness", desc: "Magical darkness fills the room. You are blinded for 1 minute. Darkvision does not penetrate this gloom." },
-            { title: "Silence", desc: "A sphere of absolute silence centers on the party. No Verbal components can be used." },
-            { title: "Gravity Well", desc: "The floor becomes difficult terrain. All movement speeds are halved." },
-            { title: "Psychic Scream", desc: "A high-pitched ringing shatters your concentration. <br><br><strong>INT Save DC 14</strong> or take <strong>3d8 Psychic</strong> damage." },
-            { title: "Mirror Image", desc: "A duplicate of the boss appears. Attacks against it have a 50% chance to miss." },
-            { title: "Necrotic Rot", desc: "Healing spells cast within the room heal for half the amount." },
-            { title: "The Heart", desc: "<span style='color:var(--gold-highlight)'>A moment of respite.</span><br>The party regains <strong>2d8 + 4 HP</strong>." }
+            { angle: 202.5, title: "The Skull", desc: "A flurry of poison darts erupts from the walls. <br><br><strong>DEX Save DC 15</strong> or take <strong>4d6 Poison</strong> damage." },
+            { angle: 22.5,  title: "The Moon",  desc: "Magical darkness fills the room (1 Min). Darkvision does not penetrate." },
+            { angle: 247.5, title: "Diamond",   desc: "A high-pitched ringing shatters your concentration. <br><br><strong>INT Save DC 14</strong> or take <strong>3d8 Psychic</strong> damage." },
+            { angle: 292.5, title: "Horseshoe", desc: "Gravity Well: The floor becomes difficult terrain. All movement speeds are halved." },
+            { angle: 67.5,  title: "The Star",  desc: "Mirror Image: A duplicate of the boss appears. Attacks against it have a 50% chance to miss." },
+            { angle: 157.5, title: "Clover",    desc: "Silence: A sphere of absolute silence centers on the party." },
+            { angle: 337.5, title: "The Sun",   desc: "Healing spells cast within the room are maximized." },
+            { angle: 112.5, title: "The Heart", desc: "<span style='color:var(--gold-highlight)'>A moment of respite.</span><br>The party regains <strong>2d8 + 4 HP</strong>." }
         ];
 
         let currentDeg = 0;
         window.spinWheel = function(val) {
             const wheel = document.getElementById('wheel-img');
-            const sliceDeg = 45;
-            const targetDeg = (val - 1) * sliceDeg; 
-            const jitter = Math.floor(Math.random() * 20) + 10; 
-            currentDeg += 1080 + targetDeg + jitter;
             
+            // Get data for this button (1-indexed input)
+            const data = horrorOutcomes[val - 1];
+            if(!data) return;
+
+            // We want the target angle to end up at 0 (Top)
+            // If angle is 202.5, we spin -202.5 to bring it to top.
+            // Add 1080 (3 spins) for effect.
+            const baseRot = 1080;
+            const targetRot = data.angle;
+            
+            // Random Jitter (-10 to +10 degrees) to feel analog
+            const jitter = Math.floor(Math.random() * 20) - 10;
+            
+            // Accumulate rotation so we don't snap back
+            currentDeg = currentDeg + baseRot + (360 - (currentDeg % 360)) + targetRot + jitter;
+            
+            // We rotate Negative to go Clockwise visually relative to pointer
             wheel.style.transform = `rotate(-${currentDeg}deg)`; 
             
             setTimeout(() => {
@@ -654,8 +666,7 @@
             });
         }
 
-        // --- INITIALIZATION ---
-        // Run this at the end to ensure DOM is ready
+        // --- INIT ---
         initDredges();
     </script>
 </body>
