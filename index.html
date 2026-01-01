@@ -169,35 +169,98 @@
             100% {opacity: 0; transform: scale(1.4); } 
         }
 
-        /* --- GAME 3: BRIDGE (THINNER) --- */
+/* --- GAME 3: THE ABYSSAL PATH --- */
         .bridge-container {
-            position: relative; width: 100%; max-width: 900px; height: 450px;
-            margin: 0 auto; background: radial-gradient(circle at center, #111 0%, #000 100%);
-            border: 1px solid #333; box-shadow: inset 0 0 50px #000;
-            cursor: none; overflow: hidden; border-radius: 4px;
+            position: relative; 
+            width: 100%; max-width: 900px; height: 450px;
+            margin: 0 auto; 
+            /* Deep Void Background with subtle noise */
+            background-color: #020202;
+            background-image: 
+                radial-gradient(circle at 50% 50%, #1a1a2e 0%, transparent 60%),
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+            border: 1px solid #333; 
+            box-shadow: inset 0 0 100px #000;
+            cursor: none; 
+            overflow: hidden; 
+            border-radius: 4px;
         }
 
-        /* FIX: Reduced stroke-width to 20px */
-        #bridge-path {
+        /* The Hitbox (Invisible but tracks the mouse) */
+        #bridge-hitbox {
+            fill: none;
+            stroke: transparent;
+            stroke-width: 25px; /* The actual difficulty width */
+            pointer-events: stroke; /* Critical: Only interaction happens on the stroke */
+        }
+
+        /* VISUAL LAYER 1: The Outer Glow (Smokey) */
+        #bridge-glow {
             fill: none;
             stroke: var(--spirit);
-            stroke-width: 20px; 
-            stroke-linecap: square; 
-            stroke-linejoin: bevel; 
-            filter: blur(4px);
-            opacity: 0.2;
-            animation: pulsePath 3s infinite alternate;
-        }
-        @keyframes pulsePath { 
-            from { opacity: 0.15; stroke-width: 20px; } 
-            to { opacity: 0.3; stroke-width: 25px; } 
+            stroke-width: 40px;
+            filter: url(#ectoplasm); /* The Distortion Filter */
+            opacity: 0.3;
+            stroke-linecap: round;
         }
 
-        #bridge-core { fill: none; stroke: rgba(255,255,255,0.8); stroke-width: 1px; stroke-dasharray: 5, 15; opacity: 0.5; }
-        #spirit-cursor { width: 12px; height: 12px; background: #fff; border-radius: 50%; position: absolute; pointer-events: none; box-shadow: 0 0 10px #fff, 0 0 20px var(--spirit); transform: translate(-50%, -50%); z-index: 20; display: none; mix-blend-mode: screen; }
-        .fail-state { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; box-shadow: inset 0 0 100px var(--blood) !important; }
-        @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
-        #fail-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: 'Cinzel'; font-size: 5rem; color: var(--blood-bright); text-shadow: 0 0 20px var(--blood); display: none; pointer-events: none; z-index: 30; }
+        /* VISUAL LAYER 2: The Flowing Stream */
+        #bridge-stream {
+            fill: none;
+            stroke: #fff;
+            stroke-width: 15px;
+            stroke-dasharray: 20, 40; /* Dashed line */
+            filter: blur(4px);
+            opacity: 0.6;
+            animation: flowStream 2s linear infinite;
+        }
+
+        /* VISUAL LAYER 3: The Core Energy */
+        #bridge-core-vis {
+            fill: none;
+            stroke: #fff;
+            stroke-width: 2px;
+            opacity: 0.8;
+            filter: drop-shadow(0 0 5px #fff);
+        }
+
+        @keyframes flowStream {
+            to { stroke-dashoffset: -60; }
+        }
+
+        /* The Soul Cursor */
+        #spirit-cursor { 
+            width: 16px; height: 16px; 
+            background: #fff; 
+            border-radius: 50%; 
+            position: absolute; 
+            pointer-events: none; 
+            transform: translate(-50%, -50%); 
+            z-index: 20; 
+            display: none; 
+            mix-blend-mode: screen;
+            box-shadow: 
+                0 0 10px #fff, 
+                0 0 20px var(--spirit), 
+                0 0 40px var(--spirit);
+            filter: url(#cursor-flicker);
+        }
+
+        .fail-state { 
+            animation: glitch 0.2s cubic-bezier(.25, .46, .45, .94) both infinite; 
+            box-shadow: inset 0 0 150px var(--blood) !important; 
+        }
+        
+        @keyframes glitch { 
+            0% { transform: translate(0); } 
+            20% { transform: translate(-2px, 2px); } 
+            40% { transform: translate(-2px, -2px); } 
+            60% { transform: translate(2px, 2px); } 
+            80% { transform: translate(2px, -2px); } 
+            100% { transform: translate(0); } 
+        }
 
         /* --- GAME 5: ROPERS --- */
         .vial-rack { display: flex; justify-content: center; gap: 30px; margin: 40px 0; perspective: 1000px; flex-wrap: wrap;}
@@ -261,67 +324,44 @@
         <button class="back-btn" onclick="nav('hub')">Return to Hub</button>
     </div>
 
-    <div id="game3" class="screen hidden">
+   <div id="game3" class="screen hidden">
         <h2>The Spectral Bridge</h2>
-        <p>Guide the soul. The path is treacherous and narrow.</p>
+        <p>Guide the soul across the abyss. The path is narrow and shifting.</p>
         
         <div class="bridge-container" id="bridge-ui">
             <div id="spirit-cursor"></div>
             <div id="fail-msg">FALLEN</div>
             
-            <svg width="100%" height="100%" viewBox="0 0 900 450">
-                <path id="bridge-path" 
+            <svg width="100%" height="100%" viewBox="0 0 900 450" preserveAspectRatio="none">
+                <defs>
+                    <filter id="ectoplasm">
+                        <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="4" result="noise" />
+                        <feDisplacementMap in="SourceGraphic" in2="noise" scale="15" />
+                        <feGaussianBlur stdDeviation="3" />
+                    </filter>
+                    
+                    <filter id="cursor-flicker">
+                        <feTurbulence type="fractalNoise" baseFrequency="0.1" numOctaves="2" />
+                        <feDisplacementMap in="SourceGraphic" scale="3" />
+                    </filter>
+                </defs>
+
+                <path id="bridge-glow" 
+                      d="M 50 400 L 150 300 L 200 400 L 350 100 L 500 350 L 650 50 L 850 225" />
+
+                <path id="bridge-stream" 
+                      d="M 50 400 L 150 300 L 200 400 L 350 100 L 500 350 L 650 50 L 850 225" />
+
+                <path id="bridge-core-vis" 
+                      d="M 50 400 L 150 300 L 200 400 L 350 100 L 500 350 L 650 50 L 850 225" />
+
+                <path id="bridge-hitbox" 
                       d="M 50 400 L 150 300 L 200 400 L 350 100 L 500 350 L 650 50 L 850 225" 
                       onmouseenter="enterBridge()" 
                       onmouseleave="fallOffBridge()" />
-                
-                <path id="bridge-core" 
-                      d="M 50 400 L 150 300 L 200 400 L 350 100 L 500 350 L 650 50 L 850 225" 
-                      pointer-events="none" />
             </svg>
         </div>
 
-        <button class="back-btn" onclick="nav('hub')">Return to Hub</button>
-    </div>
-
-    <div id="game5" class="screen hidden">
-        <h2>Specimen Feeding</h2>
-        <p>Input damage dealt. The hungriest specimen (Lowest HP) will retaliate.</p>
-        
-        <div class="vial-rack">
-            <div class="vial-unit">
-                <div class="vial-display">
-                    <img src="assets/vial-empty.png" class="vial-bg">
-                    <div class="vial-mask" id="mask-1"><img src="assets/vial-complete.png" class="vial-fg"></div>
-                </div>
-                <input type="number" id="dmg-1" value="0" oninput="updateVials()">
-            </div>
-            <div class="vial-unit">
-                <div class="vial-display">
-                    <img src="assets/vial-empty.png" class="vial-bg">
-                    <div class="vial-mask" id="mask-2"><img src="assets/vial-complete.png" class="vial-fg"></div>
-                </div>
-                <input type="number" id="dmg-2" value="0" oninput="updateVials()">
-            </div>
-            <div class="vial-unit">
-                <div class="vial-display">
-                    <img src="assets/vial-empty.png" class="vial-bg">
-                    <div class="vial-mask" id="mask-3"><img src="assets/vial-complete.png" class="vial-fg"></div>
-                </div>
-                <input type="number" id="dmg-3" value="0" oninput="updateVials()">
-            </div>
-            <div class="vial-unit">
-                <div class="vial-display">
-                    <img src="assets/vial-empty.png" class="vial-bg">
-                    <div class="vial-mask" id="mask-4"><img src="assets/vial-complete.png" class="vial-fg"></div>
-                </div>
-                <input type="number" id="dmg-4" value="0" oninput="updateVials()">
-            </div>
-        </div>
-
-        <button onclick="calculateAggro()">Identify Threat</button>
-        <div id="roper-res" style="min-height: 2em; margin-top:20px; font-size: 1.4rem; font-family: 'Cinzel'"></div>
-        
         <button class="back-btn" onclick="nav('hub')">Return to Hub</button>
     </div>
 
