@@ -7,7 +7,6 @@
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     <style>
         :root {
-            /* Palette: Void, Blood, Gold, Spirit */
             --bg-void: #050505;
             --gold-base: #c5a059;
             --gold-highlight: #f0e68c;
@@ -15,7 +14,8 @@
             --blood: #8b0000;
             --blood-bright: #ff3333;
             --spirit: #aaddff;
-            --glass-panel: rgba(10, 5, 5, 0.85);
+            --poison-gas: #39ff14;
+            --glass-panel: rgba(10, 5, 5, 0.90);
         }
 
         * { box-sizing: border-box; }
@@ -31,49 +31,44 @@
             justify-content: center;
             min-height: 100vh;
             margin: 0;
-            overflow: hidden; /* Prevent scroll bars during immersion */
             user-select: none;
+            overflow-y: auto; /* Allow scroll if screen is small */
         }
 
-        /* Cinematic Vignette Overlay */
         body::after {
             content: "";
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle at center, transparent 40%, #000 100%);
+            background: radial-gradient(circle at center, transparent 30%, #000 100%);
             pointer-events: none;
             z-index: 0;
         }
 
-        /* --- THE GLASS UI CONTAINER --- */
         .screen {
             position: relative;
             z-index: 10;
             background: var(--glass-panel);
-            backdrop-filter: blur(12px); /* Modern Glassmorphism */
+            backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
-            border: 1px solid rgba(197, 160, 89, 0.3); /* Subtle Gold Rim */
-            box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+            border: 1px solid rgba(197, 160, 89, 0.3);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.9);
             padding: 40px; 
             border-radius: 8px;
             width: 95%; 
             max-width: 1100px;
             text-align: center; 
-            opacity: 0; 
-            animation: fadeIn 1s forwards ease-out;
-            transform: translateY(20px);
+            margin: 20px 0;
+            animation: fadeIn 0.6s forwards ease-out;
         }
 
-        @keyframes fadeIn { to { opacity: 1; transform: translateY(0); } }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
         .hidden { display: none !important; }
 
-        /* Typography */
         h1, h2 { 
             font-family: 'Cinzel', serif; 
             text-transform: uppercase; 
             letter-spacing: 0.15em; 
-            margin-bottom: 10px;
-            /* Gold Gradient Text */
+            margin-bottom: 15px;
             background: linear-gradient(to bottom, var(--gold-highlight), var(--gold-base));
             -webkit-background-clip: text;
             background-clip: text;
@@ -85,7 +80,6 @@
         h2 { font-size: 2rem; border-bottom: 1px solid rgba(197, 160, 89, 0.2); padding-bottom: 15px; display: inline-block;}
         p { font-size: 1.1rem; color: #aaa; margin-bottom: 40px; font-style: italic; letter-spacing: 0.05em; }
 
-        /* Modern Gothic Buttons */
         button {
             background: rgba(0,0,0,0.6);
             color: var(--gold-base);
@@ -101,194 +95,104 @@
             position: relative;
             overflow: hidden;
         }
-
-        button::before {
-            content: "";
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(120deg, transparent, rgba(197, 160, 89, 0.2), transparent);
-            transform: translateX(-100%);
-            transition: 0.5s;
-        }
-
-        button:hover {
-            border-color: var(--gold-highlight);
-            color: var(--gold-highlight);
-            box-shadow: 0 0 20px rgba(197, 160, 89, 0.2);
-            transform: translateY(-2px);
-        }
-        
-        button:hover::before { transform: translateX(100%); }
+        button:hover { border-color: var(--gold-highlight); color: var(--gold-highlight); transform: translateY(-2px); box-shadow: 0 0 15px rgba(197, 160, 89, 0.3); }
         button:active { transform: scale(0.95); }
 
         .back-btn { 
-            margin-top: 50px; 
-            border: none; 
-            border-bottom: 1px solid #444; 
-            color: #666; 
-            background: transparent; 
+            margin-top: 40px; 
+            width: 100%; max-width: 300px;
+            border: 1px solid #444; 
+            color: #888; 
+            background: rgba(0,0,0,0.4); 
         }
-        .back-btn:hover { background: transparent; color: #fff; border-color: #fff; box-shadow: none; }
+        .back-btn:hover { color: #fff; border-color: #fff; background: rgba(255,255,255,0.1); }
 
-        /* --- GAME 1: WHEEL OF FORTUNE --- */
-        .wheel-stage {
-            position: relative;
-            width: 500px;
-            height: 500px;
-            margin: 0 auto 30px auto;
-        }
-        
-        #wheel-img {
-            width: 100%; height: 100%;
-            transition: transform 5s cubic-bezier(0.2, 0.8, 0.2, 1); /* Luxury Spin Feel */
-            /* POP: Drop Shadow to separate from void */
-            filter: drop-shadow(0 0 30px rgba(0,0,0,0.9)); 
-        }
-
-        #pointer-img {
-            position: absolute;
-            top: -20px; left: 50%;
-            transform: translateX(-50%);
-            width: 80px; z-index: 10;
-            filter: drop-shadow(0 5px 10px black);
-        }
-
+        /* --- GAME 1: WHEEL --- */
+        .wheel-stage { position: relative; width: 500px; height: 500px; margin: 0 auto 30px auto; }
+        #wheel-img { width: 100%; height: 100%; transition: transform 5s cubic-bezier(0.2, 0.8, 0.2, 1); filter: drop-shadow(0 0 30px rgba(0,0,0,0.9)); }
+        #pointer-img { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 80px; z-index: 10; filter: drop-shadow(0 5px 10px black); }
         .wheel-controls { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
         .wheel-btn { width: 50px; height: 50px; padding: 0; border-radius: 50%; line-height: 50px; }
-        #wheel-result { 
-            min-height: 60px; margin-top: 20px; font-family: 'Cinzel'; font-size: 1.8rem; color: #fff; 
-            text-shadow: 0 0 10px var(--gold-base); opacity: 0; transition: opacity 0.5s;
-        }
+        #wheel-result { min-height: 60px; margin-top: 20px; font-family: 'Cinzel'; font-size: 1.8rem; color: #fff; text-shadow: 0 0 10px var(--gold-base); opacity: 0; transition: opacity 0.5s; }
 
-        /* --- GAME 2: NINE DREDGES --- */
+        /* --- GAME 2: DREDGES (FIXED) --- */
         .grid-container {
             display: grid;
-            grid-template-columns: repeat(3, 160px);
-            gap: 25px;
+            grid-template-columns: repeat(3, 180px); /* Slightly larger cells */
+            gap: 20px;
             justify-content: center;
             margin: 20px auto;
         }
 
         .dredge-cell {
-            width: 160px; height: 160px;
-            position: relative; cursor: crosshair;
+            width: 180px; height: 180px;
+            position: relative; 
+            cursor: crosshair;
         }
 
-        /* Visual Pop Logic:
-           1. Portal is dark.
-           2. Monster is dark.
-           3. Solution: Monster gets a "Rim Light" drop shadow (Purple/Red) so it stands out.
-        */
         .portal-img {
             width: 100%; height: 100%;
-            position: absolute; top: 0; left: 0; z-index: 2;
+            position: absolute; top: 0; left: 0; z-index: 5; /* Frame on top */
             pointer-events: none;
             filter: drop-shadow(0 10px 10px rgba(0,0,0,0.8));
         }
 
+        /* FIX: Centered, Circle Crop, Larger Size */
         .dretch-img {
-            width: 70%; height: 70%;
-            position: absolute; top: 15%; left: 15%; z-index: 1;
+            width: 90%; 
+            height: 90%;
+            position: absolute; 
+            top: 5%; left: 5%; /* Mathematically centered (100-90)/2 */
+            z-index: 2; /* Behind frame */
+            border-radius: 50%; /* Force circle shape */
+            object-fit: cover; /* Ensure image fills circle */
             transition: transform 0.15s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            transform: scale(0);
-            /* RIM LIGHT: This makes the dark monster pop against dark background */
-            filter: drop-shadow(0 0 15px rgba(100, 0, 100, 0.6)) brightness(1.2);
+            transform: scale(0); /* Start hidden */
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.8));
         }
         .dretch-active { transform: scale(1); }
 
+        /* FIX: More Dramatic Poison */
         .poison-overlay {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: radial-gradient(circle, rgba(50, 255, 50, 0.4) 0%, transparent 60%);
-            opacity: 0; z-index: 5; pointer-events: none;
-            mix-blend-mode: color-dodge;
+            position: absolute; top: -10%; left: -10%; width: 120%; height: 120%;
+            background: radial-gradient(circle, var(--poison-gas) 20%, transparent 70%);
+            opacity: 0; z-index: 10; pointer-events: none;
+            mix-blend-mode: hard-light; /* Brighter blend */
+            filter: blur(8px);
         }
-        .poison-active { animation: puff 1.5s ease-out forwards; }
-        @keyframes puff { 0% {opacity:0; transform: scale(0.8);} 20% {opacity:1; transform: scale(1.1);} 100% {opacity:0; transform: scale(1.5);} }
+        .poison-active { animation: gasExplode 1s ease-out forwards; }
+        @keyframes gasExplode { 
+            0% {opacity: 0; transform: scale(0.5); } 
+            20% { opacity: 0.9; transform: scale(1.1); } 
+            100% {opacity: 0; transform: scale(1.4); } 
+        }
 
-        /* --- GAME 3: SPECTRAL BRIDGE --- */
+        /* --- GAME 3: BRIDGE --- */
         .bridge-container {
             position: relative; width: 100%; max-width: 900px; height: 450px;
-            margin: 0 auto;
-            background: radial-gradient(circle at center, #111 0%, #000 100%);
-            border: 1px solid #333;
-            box-shadow: inset 0 0 50px #000;
+            margin: 0 auto; background: radial-gradient(circle at center, #111 0%, #000 100%);
+            border: 1px solid #333; box-shadow: inset 0 0 50px #000;
             cursor: none; overflow: hidden; border-radius: 4px;
         }
-
-        /* Animated Path Glow */
-        #bridge-path {
-            fill: none;
-            stroke: var(--spirit);
-            stroke-width: 55px;
-            stroke-linecap: round;
-            stroke-linejoin: round;
-            filter: blur(8px);
-            opacity: 0.2;
-            animation: pulsePath 3s infinite alternate;
-        }
+        #bridge-path { fill: none; stroke: var(--spirit); stroke-width: 55px; stroke-linecap: round; stroke-linejoin: round; filter: blur(8px); opacity: 0.2; animation: pulsePath 3s infinite alternate; }
         @keyframes pulsePath { from { opacity: 0.15; stroke-width: 55px; } to { opacity: 0.3; stroke-width: 60px; } }
-
-        /* The "Core" line keeps the player focused */
-        #bridge-core {
-            fill: none; stroke: rgba(255,255,255,0.8);
-            stroke-width: 1px; stroke-dasharray: 5, 15;
-            opacity: 0.5;
-        }
-
-        #spirit-cursor {
-            width: 12px; height: 12px;
-            background: #fff; border-radius: 50%;
-            position: absolute; pointer-events: none;
-            box-shadow: 0 0 10px #fff, 0 0 20px var(--spirit), 0 0 40px var(--spirit);
-            transform: translate(-50%, -50%); z-index: 20;
-            display: none;
-            mix-blend-mode: screen;
-        }
-
+        #bridge-core { fill: none; stroke: rgba(255,255,255,0.8); stroke-width: 1px; stroke-dasharray: 5, 15; opacity: 0.5; }
+        #spirit-cursor { width: 12px; height: 12px; background: #fff; border-radius: 50%; position: absolute; pointer-events: none; box-shadow: 0 0 10px #fff, 0 0 20px var(--spirit); transform: translate(-50%, -50%); z-index: 20; display: none; mix-blend-mode: screen; }
         .fail-state { animation: shake 0.4s cubic-bezier(.36,.07,.19,.97) both; box-shadow: inset 0 0 100px var(--blood) !important; }
         @keyframes shake { 10%, 90% { transform: translate3d(-1px, 0, 0); } 20%, 80% { transform: translate3d(2px, 0, 0); } 30%, 50%, 70% { transform: translate3d(-4px, 0, 0); } 40%, 60% { transform: translate3d(4px, 0, 0); } }
-
-        #fail-msg {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            font-family: 'Cinzel'; font-size: 5rem; color: var(--blood-bright);
-            text-shadow: 0 0 20px var(--blood); display: none; pointer-events: none; z-index: 30;
-        }
+        #fail-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: 'Cinzel'; font-size: 5rem; color: var(--blood-bright); text-shadow: 0 0 20px var(--blood); display: none; pointer-events: none; z-index: 30; }
 
         /* --- GAME 5: ROPERS --- */
-        .vial-rack { display: flex; justify-content: center; gap: 30px; margin: 40px 0; perspective: 1000px; }
-        
-        .vial-unit {
-            display: flex; flex-direction: column; align-items: center; width: 120px;
-            transition: transform 0.3s;
-        }
+        .vial-rack { display: flex; justify-content: center; gap: 30px; margin: 40px 0; perspective: 1000px; flex-wrap: wrap;}
+        .vial-unit { display: flex; flex-direction: column; align-items: center; width: 120px; transition: transform 0.3s; }
         .vial-unit:hover { transform: translateZ(20px); }
-
         .vial-display { width: 120px; height: 240px; position: relative; }
-
         .vial-bg { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; filter: drop-shadow(0 10px 10px #000); opacity: 0.8; }
-        
-        /* The Masking Container */
-        .vial-mask {
-            position: absolute; bottom: 0; left: 0; width: 100%; 
-            height: 0%; /* Grows from 0 to 100 */
-            overflow: hidden; z-index: 2;
-            transition: height 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-            filter: drop-shadow(0 0 15px var(--blood)); /* Glow when full */
-        }
-        
+        .vial-mask { position: absolute; bottom: 0; left: 0; width: 100%; height: 0%; overflow: hidden; z-index: 2; transition: height 0.6s cubic-bezier(0.22, 1, 0.36, 1); filter: drop-shadow(0 0 15px var(--blood)); }
         .vial-fg { width: 120px; height: 240px; position: absolute; bottom: 0; left: 0; }
-
-        .vial-unit input {
-            background: rgba(0,0,0,0.5); border: none; border-bottom: 2px solid var(--gold-shadow);
-            color: var(--gold-highlight); font-family: 'Cinzel'; font-size: 1.5rem;
-            text-align: center; width: 80px; margin-top: 15px; padding: 5px;
-            transition: 0.3s;
-        }
+        .vial-unit input { background: rgba(0,0,0,0.5); border: none; border-bottom: 2px solid var(--gold-shadow); color: var(--gold-highlight); font-family: 'Cinzel'; font-size: 1.5rem; text-align: center; width: 80px; margin-top: 15px; padding: 5px; transition: 0.3s; }
         .vial-unit input:focus { outline: none; border-color: var(--gold-highlight); background: rgba(0,0,0,0.8); }
-
-        .attacking-text { 
-            color: var(--blood-bright); font-weight: bold; 
-            text-shadow: 0 0 10px var(--blood); 
-        }
+        .attacking-text { color: var(--blood-bright); font-weight: bold; text-shadow: 0 0 10px var(--blood); }
 
     </style>
 </head>
@@ -335,7 +239,7 @@
         
         <div class="grid-container" id="dredge-grid"></div>
 
-        <button onclick="triggerPoison()" style="border-color: #5f5; color: #5f5; margin-top: 20px;">Attack Missed (Trigger Gas)</button>
+        <button onclick="triggerPoison()" style="border-color: #39ff14; color: #39ff14; margin-top: 20px;">Attack Missed (Trigger Gas)</button>
         <br>
         <button class="back-btn" onclick="nav('hub')">Return to Hub</button>
     </div>
@@ -349,9 +253,7 @@
             <div id="fail-msg">FALLEN</div>
             
             <svg width="100%" height="100%" viewBox="0 0 900 450">
-                <path id="bridge-path" d="M 50 225 C 200 225, 250 50, 450 50 S 700 400, 850 225" 
-                      onmouseenter="enterBridge()" 
-                      onmouseleave="fallOffBridge()" />
+                <path id="bridge-path" d="M 50 225 C 200 225, 250 50, 450 50 S 700 400, 850 225" onmouseenter="enterBridge()" onmouseleave="fallOffBridge()" />
                 <path id="bridge-core" d="M 50 225 C 200 225, 250 50, 450 50 S 700 400, 850 225" pointer-events="none" />
             </svg>
         </div>
@@ -367,36 +269,28 @@
             <div class="vial-unit">
                 <div class="vial-display">
                     <img src="assets/vial-empty.png" class="vial-bg">
-                    <div class="vial-mask" id="mask-1">
-                        <img src="assets/vial-complete.png" class="vial-fg">
-                    </div>
+                    <div class="vial-mask" id="mask-1"><img src="assets/vial-complete.png" class="vial-fg"></div>
                 </div>
                 <input type="number" id="dmg-1" value="0" oninput="updateVials()">
             </div>
             <div class="vial-unit">
                 <div class="vial-display">
                     <img src="assets/vial-empty.png" class="vial-bg">
-                    <div class="vial-mask" id="mask-2">
-                        <img src="assets/vial-complete.png" class="vial-fg">
-                    </div>
+                    <div class="vial-mask" id="mask-2"><img src="assets/vial-complete.png" class="vial-fg"></div>
                 </div>
                 <input type="number" id="dmg-2" value="0" oninput="updateVials()">
             </div>
             <div class="vial-unit">
                 <div class="vial-display">
                     <img src="assets/vial-empty.png" class="vial-bg">
-                    <div class="vial-mask" id="mask-3">
-                        <img src="assets/vial-complete.png" class="vial-fg">
-                    </div>
+                    <div class="vial-mask" id="mask-3"><img src="assets/vial-complete.png" class="vial-fg"></div>
                 </div>
                 <input type="number" id="dmg-3" value="0" oninput="updateVials()">
             </div>
             <div class="vial-unit">
                 <div class="vial-display">
                     <img src="assets/vial-empty.png" class="vial-bg">
-                    <div class="vial-mask" id="mask-4">
-                        <img src="assets/vial-complete.png" class="vial-fg">
-                    </div>
+                    <div class="vial-mask" id="mask-4"><img src="assets/vial-complete.png" class="vial-fg"></div>
                 </div>
                 <input type="number" id="dmg-4" value="0" oninput="updateVials()">
             </div>
@@ -414,12 +308,9 @@
             document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
             const active = document.getElementById(id);
             active.classList.remove('hidden');
-            
-            // Animation reset
             active.style.animation = 'none';
             active.offsetHeight; /* trigger reflow */
             active.style.animation = 'fadeIn 0.6s forwards ease-out';
-
             if(id === 'game2') initDredges();
             if(id === 'game3') initBridge();
         }
@@ -427,19 +318,14 @@
         // --- GAME 1: WHEEL ---
         const outcomes = ["Poison Darts", "Psychic Scream", "Fog Cloud", "Gravity Well", "Necrotic Rot", "Silence", "Mirror Image"];
         let currentDeg = 0;
-
         function spinWheel(val) {
             const wheel = document.getElementById('wheel-img');
             const resDiv = document.getElementById('wheel-result');
-            
-            const extraSpins = 1080 + (val * 45); // Spin logic based on input for variety
+            const extraSpins = 1080 + (val * 45); 
             const randomOffset = Math.floor(Math.random() * 20);
             currentDeg += extraSpins + randomOffset;
-            
             wheel.style.transform = `rotate(${currentDeg}deg)`;
-            
-            resDiv.style.opacity = '0'; // fade out old result
-            
+            resDiv.style.opacity = '0'; 
             setTimeout(() => {
                 resDiv.style.opacity = '1';
                 if (val === 8) {
@@ -451,13 +337,11 @@
             }, 5000); 
         }
 
-        // --- GAME 2: DREDGES ---
+        // --- GAME 2: DREDGES (FIXED) ---
         let currentDredgeIdx = -1;
-
         function initDredges() {
             const grid = document.getElementById('dredge-grid');
             grid.innerHTML = '';
-            
             for(let i=0; i<9; i++) {
                 const cell = document.createElement('div');
                 cell.className = 'dredge-cell';
@@ -503,30 +387,26 @@
             const cell = document.getElementById(`cell-${currentDredgeIdx}`);
             const poison = cell.querySelector('.poison-overlay');
             poison.classList.add('poison-active');
-            setTimeout(() => poison.classList.remove('poison-active'), 1500);
+            setTimeout(() => poison.classList.remove('poison-active'), 1000);
         }
 
         // --- GAME 3: BRIDGE ---
         let bridgeActive = false;
-
         function initBridge() {
             const ui = document.getElementById('bridge-ui');
             const cursor = document.getElementById('spirit-cursor');
-            
             ui.addEventListener('mousemove', (e) => {
                 const rect = ui.getBoundingClientRect();
                 cursor.style.left = (e.clientX - rect.left) + 'px';
                 cursor.style.top = (e.clientY - rect.top) + 'px';
             });
         }
-
         function enterBridge() {
             bridgeActive = true;
             document.getElementById('spirit-cursor').style.display = 'block';
             document.getElementById('bridge-ui').classList.remove('fail-state');
             document.getElementById('fail-msg').style.display = 'none';
         }
-
         function fallOffBridge() {
             if (!bridgeActive) return;
             bridgeActive = false;
@@ -545,7 +425,6 @@
                 document.getElementById(`mask-${i}`).style.height = pct + '%';
             }
         }
-
         function calculateAggro() {
             const dmg = [
                 parseInt(document.getElementById('dmg-1').value) || 0,
@@ -553,18 +432,11 @@
                 parseInt(document.getElementById('dmg-3').value) || 0,
                 parseInt(document.getElementById('dmg-4').value) || 0
             ];
-
             const min = Math.min(...dmg);
             const res = document.getElementById('roper-res');
-
-            if (min === 0 && dmg.every(d => d === 0)) {
-                res.innerHTML = "No damage recorded.";
-                return;
-            }
-
+            if (min === 0 && dmg.every(d => d === 0)) { res.innerHTML = "No damage recorded."; return; }
             let attackers = [];
             dmg.forEach((d, i) => { if (d === min) attackers.push(i + 1); });
-
             res.innerHTML = `Specimen <span class="attacking-text">${attackers.join(', ')}</span> Enraged (Lowest HP: ${min})`;
         }
     </script>
