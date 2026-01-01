@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Cursed Carnival</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --text-color: #e0e0e0;
+            --accent: #8b0000; /* Blood Red */
+            --highlight: #4a0080; /* Cursed Purple */
+            --poison: #32cd32; /* Poison Green */
+        }
+
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            text-align: center;
+        }
+
+        h1, h2 { text-transform: uppercase; letter-spacing: 2px; text-shadow: 2px 2px black; }
+        
+        button {
+            background: #333;
+            color: white;
+            border: 2px solid var(--accent);
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        button:hover { background: var(--accent); }
+        button:active { transform: scale(0.98); }
+
+        .hidden { display: none !important; }
+        .screen { width: 100%; max-width: 600px; padding: 20px; }
+        
+        .back-btn { margin-top: 20px; border-color: #666; font-size: 0.8rem; }
+
+        /* GAME 1: WHEEL */
+        .wheel-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 20px; }
+        .wheel-btn { height: 60px; font-size: 1.2rem; }
+        #wheel-result { margin-top: 20px; font-size: 1.5rem; color: var(--highlight); min-height: 50px; }
+
+        /* GAME 2: DREDGES */
+        .mole-grid { 
+            display: grid; 
+            grid-template-columns: repeat(3, 100px); 
+            grid-template-rows: repeat(3, 100px); 
+            gap: 10px; 
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .hole { 
+            background: #2a2a2a; 
+            border: 2px solid #444; 
+            border-radius: 50%; 
+            position: relative;
+            overflow: hidden;
+            cursor: crosshair;
+        }
+        .dredge {
+            width: 80%; height: 80%;
+            background: var(--accent);
+            border-radius: 50%;
+            position: absolute;
+            top: 10%; left: 10%;
+            transition: transform 0.1s;
+            box-shadow: 0 0 10px var(--accent);
+        }
+        .dredge::after { content: "Suggestive Face"; font-size: 10px; color: black; display: flex; justify-content: center; align-items: center; height: 100%; }
+        
+        /* Poison Cloud Animation */
+        @keyframes poisonCloud {
+            0% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: 1; transform: scale(1.5); }
+            100% { opacity: 0; transform: scale(2); }
+        }
+        .poison-effect {
+            position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(circle, var(--poison) 20%, transparent 70%);
+            opacity: 0;
+            pointer-events: none;
+        }
+        .active-poison { animation: poisonCloud 1s ease-out; }
+
+        /* GAME 3: WIRE */
+        .wire-container { position: relative; height: 300px; background: #222; border: 2px solid #555; cursor: none; overflow: hidden;}
+        #cursor-follower {
+            width: 20px; height: 20px;
+            border: 2px solid cyan;
+            border-radius: 50%;
+            position: absolute;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+        svg { width: 100%; height: 100%; }
+        .wire-path { 
+            fill: none; 
+            stroke: #555; 
+            stroke-width: 15; 
+            stroke-linecap: round;
+            transition: stroke 0.2s;
+        }
+        .wire-path:hover { stroke: red; filter: drop-shadow(0 0 10px red); }
+        .start-zone, .end-zone { fill: green; opacity: 0.3; }
+        #zap-msg { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: red; font-size: 2rem; display: none; background: rgba(0,0,0,0.8); padding: 10px;}
+
+        /* GAME 5: ROPERS */
+        .roper-container { display: flex; justify-content: space-around; gap: 10px; }
+        .roper-col { display: flex; flex-direction: column; align-items: center; }
+        .roper-viz { 
+            width: 50px; height: 100px; 
+            background: #333; 
+            border: 2px solid #555; 
+            position: relative; 
+            margin-bottom: 10px;
+            transition: 0.3s;
+        }
+        .roper-fill { 
+            position: absolute; bottom: 0; left: 0; right: 0; 
+            background: var(--accent); 
+            transition: height 0.5s; 
+            height: 0%; /* Dynamic */
+        }
+        .roper-col input { width: 40px; text-align: center; background: #222; color: white; border: 1px solid #555; padding: 5px; }
+        .attacking { border-color: red; box-shadow: 0 0 20px red; }
+
+    </style>
+</head>
+<body>
+
+    <div id="hub" class="screen">
+        <h1>The Cursed Carnival</h1>
+        <p>Select your torment.</p>
+        <button onclick="nav('game1')">I. Wheel of Fortune</button>
+        <button onclick="nav('game2')">II. Nine Dredges</button>
+        <button onclick="nav('game3')">III. The Live Wire</button>
+        <button onclick="nav('game5')">V. The Ropers</button>
+    </div>
+
+    <div id="game1" class="screen hidden">
+        <h2>Wheel of Fortune</h2>
+        <p>Roll 1d8 physical die. Click the result below.</p>
+        <div class="wheel-grid">
+            <button class="wheel-btn" onclick="spinResult(1)">1</button>
+            <button class="wheel-btn" onclick="spinResult(2)">2</button>
+            <button class="wheel-btn" onclick="spinResult(3)">3</button>
+            <button class="wheel-btn" onclick="spinResult(4)">4</button>
+            <button class="wheel-btn" onclick="spinResult(5)">5</button>
+            <button class="wheel-btn" onclick="spinResult(6)">6</button>
+            <button class="wheel-btn" onclick="spinResult(7)">7</button>
+            <button class="wheel-btn" onclick="spinResult(8)">8</button>
+        </div>
+        <div id="wheel-result"></div>
+        <button class="back-btn" onclick="nav('hub')">Back to Hub</button>
+    </div>
+
+    <div id="game2" class="screen hidden">
+        <h2>Nine Dredges</h2>
+        <p>Hit AC? Click the Dredge. Miss AC? Click "Attack Missed".</p>
+        
+        <div class="mole-grid" id="moleGrid">
+            </div>
+
+        <button style="background: var(--poison); color: black; font-weight: bold;" onclick="dredgeMiss()">Attack Missed (Trigger Cloud)</button>
+        
+        <button class="back-btn" onclick="nav('hub')">Back to Hub</button>
+    </div>
+
+    <div id="game3" class="screen hidden">
+        <h2>The Live Wire</h2>
+        <p>Guide the ring. Touching the wire triggers a ZAP.</p>
+        <div class="wire-container" id="wireBoard">
+            <div id="cursor-follower"></div>
+            <div id="zap-msg">ZAPPED! Roll DMG</div>
+            <svg viewBox="0 0 300 300">
+                <circle cx="30" cy="30" r="20" class="start-zone" />
+                <circle cx="270" cy="270" r="20" class="end-zone" />
+                <path class="wire-path" d="M30 30 C 100 30, 100 150, 150 150 S 200 270, 270 270" onmouseover="zap()" onmouseout="unzap()"/>
+            </svg>
+        </div>
+        <button class="back-btn" onclick="nav('hub')">Back to Hub</button>
+    </div>
+
+    <div id="game5" class="screen hidden">
+        <h2>Feeding Time</h2>
+        <p>Enter total damage dealt to each Roper.</p>
+        <div class="roper-container">
+            <div class="roper-col" id="r1">
+                <div class="roper-viz"><div class="roper-fill" style="height: 20%"></div></div>
+                <input type="number" id="in1" value="0">
+            </div>
+            <div class="roper-col" id="r2">
+                <div class="roper-viz"><div class="roper-fill" style="height: 20%"></div></div>
+                <input type="number" id="in2" value="0">
+            </div>
+            <div class="roper-col" id="r3">
+                <div class="roper-viz"><div class="roper-fill" style="height: 20%"></div></div>
+                <input type="number" id="in3" value="0">
+            </div>
+            <div class="roper-col" id="r4">
+                <div class="roper-viz"><div class="roper-fill" style="height: 20%"></div></div>
+                <input type="number" id="in4" value="0">
+            </div>
+        </div>
+        <br>
+        <button onclick="calcRopers()">Calculate Aggro</button>
+        <p id="roper-msg"></p>
+        <button class="back-btn" onclick="nav('hub')">Back to Hub</button>
+    </div>
+
+    <script>
+        // NAVIGATION
+        function nav(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+            document.getElementById(screenId).classList.remove('hidden');
+            if(screenId === 'game2') initDredges();
+            if(screenId === 'game3') initWire();
+        }
+
+        // GAME 1: WHEEL LOGIC
+        const outcomes = [
+            "Poison Darts (CON Save)", 
+            "Psychic Scream (INT Save)", 
+            "Fog Cloud (Blinded)", 
+            "Gravity Well (Slowed)", 
+            "Necrotic Rot (No healing)", 
+            "Silence (No verbal)", 
+            "Mirror Image (Disadvantage)"
+        ];
+
+        function spinResult(val) {
+            const display = document.getElementById('wheel-result');
+            if (val === 8) {
+                display.innerText = "✨ PASSED! The gate opens. ✨";
+                display.style.color = "#00ff00";
+            } else {
+                // Pick random consequence if 1-7, or map explicitly if you prefer consistency
+                // Currently implementing: Random bad thing to keep it fresh
+                const badThing = outcomes[Math.floor(Math.random() * outcomes.length)];
+                display.innerText = `Rolled ${val}: ${badThing}`;
+                display.style.color = "var(--accent)";
+            }
+        }
+
+        // GAME 2: DREDGES LOGIC
+        let dredgeIndex = -1;
+        
+        function initDredges() {
+            const grid = document.getElementById('moleGrid');
+            grid.innerHTML = ''; // Clear
+            for(let i=0; i<9; i++) {
+                let d = document.createElement('div');
+                d.className = 'hole';
+                d.id = `hole-${i}`;
+                
+                // Add poison cloud container
+                let cloud = document.createElement('div');
+                cloud.className = 'poison-effect';
+                cloud.id = `cloud-${i}`;
+                d.appendChild(cloud);
+
+                d.onclick = () => { /* Optional: clicking empty hole logic? */ };
+                grid.appendChild(d);
+            }
+            spawnDredge();
+        }
+
+        function spawnDredge() {
+            // Clear old
+            document.querySelectorAll('.dredge').forEach(e => e.remove());
+            
+            // Pick new random
+            let newIndex;
+            do {
+                newIndex = Math.floor(Math.random() * 9);
+            } while (newIndex === dredgeIndex);
+            
+            dredgeIndex = newIndex;
+            
+            const mole = document.createElement('div');
+            mole.className = 'dredge';
+            mole.onclick = (e) => {
+                e.stopPropagation(); // Prevent hole click
+                // Visual pop
+                spawnDredge(); // Move immediately
+            };
+            
+            document.getElementById(`hole-${dredgeIndex}`).appendChild(mole);
+        }
+
+        function dredgeMiss() {
+            // Trigger poison cloud on the CURRENT dredge hole
+            const cloud = document.getElementById(`cloud-${dredgeIndex}`);
+            cloud.classList.remove('active-poison');
+            void cloud.offsetWidth; // Trigger reflow
+            cloud.classList.add('active-poison');
+        }
+
+        // GAME 3: WIRE LOGIC
+        function initWire() {
+            const board = document.getElementById('wireBoard');
+            const follower = document.getElementById('cursor-follower');
+            
+            board.addEventListener('mousemove', (e) => {
+                const rect = board.getBoundingClientRect();
+                follower.style.left = (e.clientX - rect.left) + 'px';
+                follower.style.top = (e.clientY - rect.top) + 'px';
+            });
+        }
+
+        function zap() {
+            document.getElementById('zap-msg').style.display = 'block';
+            document.body.style.backgroundColor = '#300';
+        }
+
+        function unzap() {
+            document.getElementById('zap-msg').style.display = 'none';
+            document.body.style.backgroundColor = '#1a1a1a';
+        }
+
+        // GAME 5: ROPERS LOGIC
+        function calcRopers() {
+            // Reset styles
+            document.querySelectorAll('.roper-viz').forEach(r => r.classList.remove('attacking'));
+            
+            const vals = [
+                parseInt(document.getElementById('in1').value) || 0,
+                parseInt(document.getElementById('in2').value) || 0,
+                parseInt(document.getElementById('in3').value) || 0,
+                parseInt(document.getElementById('in4').value) || 0
+            ];
+
+            // Update visual fill (just for fun, assumes max health ~50 for visual scale)
+            vals.forEach((v, i) => {
+                const fill = document.querySelectorAll('.roper-fill')[i];
+                let h = (v / 50) * 100; 
+                if(h > 100) h = 100;
+                fill.style.height = h + '%';
+            });
+
+            // Find lowest
+            const minVal = Math.min(...vals);
+            
+            // Highlight all that match lowest
+            let attackers = [];
+            vals.forEach((v, i) => {
+                if (v === minVal) {
+                    document.querySelectorAll('.roper-viz')[i].classList.add('attacking');
+                    attackers.push(i + 1);
+                }
+            });
+
+            document.getElementById('roper-msg').innerText = `Roper(s) #${attackers.join(', ')} are hungriest (Lowest DMG: ${minVal}). They Attack!`;
+        }
+
+    </script>
+</body>
+</html>
