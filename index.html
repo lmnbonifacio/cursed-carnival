@@ -8,11 +8,11 @@
     
     <link rel="preload" as="image" href="assets/bg.webp">
     <link rel="preload" as="image" href="assets/wheel.webp">
-    <link rel="preload" as="image" href="assets/pointer.png">
-    <link rel="preload" as="image" href="assets/dretch.png">
-    <link rel="preload" as="image" href="assets/portal.png">
-    <link rel="preload" as="image" href="assets/vial-empty.png">
-    <link rel="preload" as="image" href="assets/vial-complete.png">
+    <link rel="preload" as="image" href="assets/pointer.webp">
+    <link rel="preload" as="image" href="assets/dretch.webp">
+    <link rel="preload" as="image" href="assets/portal.webp">
+    <link rel="preload" as="image" href="assets/vial-empty.webp">
+    <link rel="preload" as="image" href="assets/vial-complete.webp">
 
     <style>
         :root {
@@ -323,7 +323,7 @@
         <p>Cast the physical die (1d8). The carnival decides your fate.</p>
         
         <div class="wheel-stage">
-            <img src="assets/pointer.png" id="pointer-img" alt="Pointer">
+            <img src="assets/pointer.webp" id="pointer-img" alt="Pointer">
             <img src="assets/wheel.webp" id="wheel-img" alt="Wheel">
         </div>
 
@@ -407,29 +407,29 @@
         <div class="vial-rack">
             <div class="vial-unit" id="vial-unit-1">
                 <div class="vial-display">
-                    <img src="assets/vial-empty.png" class="vial-bg">
-                    <div class="vial-mask" id="mask-1"><img src="assets/vial-complete.png" class="vial-fg"></div>
+                    <img src="assets/vial-empty.webp" class="vial-bg">
+                    <div class="vial-mask" id="mask-1"><img src="assets/vial-complete.webp" class="vial-fg"></div>
                 </div>
                 <input type="number" id="dmg-1" value="0" oninput="updateVials()">
             </div>
             <div class="vial-unit" id="vial-unit-2">
                 <div class="vial-display">
-                    <img src="assets/vial-empty.png" class="vial-bg">
-                    <div class="vial-mask" id="mask-2"><img src="assets/vial-complete.png" class="vial-fg"></div>
+                    <img src="assets/vial-empty.webp" class="vial-bg">
+                    <div class="vial-mask" id="mask-2"><img src="assets/vial-complete.webp" class="vial-fg"></div>
                 </div>
                 <input type="number" id="dmg-2" value="0" oninput="updateVials()">
             </div>
             <div class="vial-unit" id="vial-unit-3">
                 <div class="vial-display">
-                    <img src="assets/vial-empty.png" class="vial-bg">
-                    <div class="vial-mask" id="mask-3"><img src="assets/vial-complete.png" class="vial-fg"></div>
+                    <img src="assets/vial-empty.webp" class="vial-bg">
+                    <div class="vial-mask" id="mask-3"><img src="assets/vial-complete.webp" class="vial-fg"></div>
                 </div>
                 <input type="number" id="dmg-3" value="0" oninput="updateVials()">
             </div>
             <div class="vial-unit" id="vial-unit-4">
                 <div class="vial-display">
-                    <img src="assets/vial-empty.png" class="vial-bg">
-                    <div class="vial-mask" id="mask-4"><img src="assets/vial-complete.png" class="vial-fg"></div>
+                    <img src="assets/vial-empty.webp" class="vial-bg">
+                    <div class="vial-mask" id="mask-4"><img src="assets/vial-complete.webp" class="vial-fg"></div>
                 </div>
                 <input type="number" id="dmg-4" value="0" oninput="updateVials()">
             </div>
@@ -521,13 +521,13 @@
                 cell.appendChild(poison);
 
                 const monster = document.createElement('img');
-                monster.src = 'assets/dretch.png';
+                monster.src = 'assets/dretch.webp';
                 monster.className = 'dretch-img';
                 monster.onclick = (e) => whackDredge(e);
                 cell.appendChild(monster);
 
                 const portal = document.createElement('img');
-                portal.src = 'assets/portal.png';
+                portal.src = 'assets/portal.webp';
                 portal.className = 'portal-img';
                 cell.appendChild(portal);
 
