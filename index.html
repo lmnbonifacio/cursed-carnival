@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>The Cursed Carnival</title>
     <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;700&family=Playfair+Display:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
     
@@ -27,7 +27,7 @@
             --glass-panel: rgba(10, 5, 5, 0.90);
         }
 
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
 
         body {
             font-family: 'Playfair Display', serif;
@@ -42,6 +42,7 @@
             margin: 0;
             user-select: none;
             overflow-y: auto;
+            overflow-x: hidden; /* Prevent horizontal scroll */
         }
 
         body::after {
@@ -83,6 +84,7 @@
             background-clip: text;
             color: transparent;
             text-shadow: 0 2px 10px rgba(0,0,0,0.5);
+            line-height: 1.2;
         }
 
         h1 { font-size: 3rem; margin-top: 0; }
@@ -103,6 +105,7 @@
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
+            touch-action: manipulation; /* Improves touch response */
         }
         button:hover { border-color: var(--gold-highlight); color: var(--gold-highlight); transform: translateY(-2px); box-shadow: 0 0 15px rgba(197, 160, 89, 0.3); }
         button:active { transform: scale(0.95); }
@@ -117,9 +120,15 @@
         .back-btn:hover { color: #fff; border-color: #fff; background: rgba(255,255,255,0.1); }
 
         /* --- GAME 1: WHEEL OF HORRORS --- */
-        .wheel-stage { position: relative; width: 500px; height: 500px; margin: 0 auto 30px auto; }
+        .wheel-stage { 
+            position: relative; 
+            width: 500px; 
+            height: 500px; 
+            margin: 0 auto 30px auto; 
+            max-width: 100%; /* Safety for mobile */
+        }
         #wheel-img { width: 100%; height: 100%; transition: transform 5s cubic-bezier(0.2, 0.8, 0.2, 1); filter: drop-shadow(0 0 30px rgba(0,0,0,0.9)); }
-        #pointer-img { position: absolute; top: -20px; left: 50%; transform: translateX(-50%); width: 80px; z-index: 10; filter: drop-shadow(0 5px 10px black); }
+        #pointer-img { position: absolute; top: -5%; left: 50%; transform: translateX(-50%); width: 15%; z-index: 10; filter: drop-shadow(0 5px 10px black); }
         .wheel-controls { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
         .wheel-btn { width: 50px; height: 50px; padding: 0; border-radius: 50%; line-height: 50px; }
         
@@ -130,11 +139,12 @@
             display: flex; align-items: center; justify-content: center;
             opacity: 0; pointer-events: none; transition: opacity 0.3s;
             backdrop-filter: blur(5px);
+            padding: 20px;
         }
         .modal-active { opacity: 1; pointer-events: auto; }
         .modal-content {
             background: #111; border: 2px solid var(--gold-base);
-            padding: 40px; max-width: 600px; text-align: center;
+            padding: 40px; max-width: 600px; width: 100%; text-align: center;
             box-shadow: 0 0 50px rgba(197, 160, 89, 0.2);
             transform: scale(0.8); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
@@ -156,7 +166,8 @@
             margin: 20px auto;
         }
         .dredge-cell {
-            width: 180px; height: 180px;
+            width: 100%; /* Fluid width */
+            aspect-ratio: 1/1; /* Keeps it square */
             position: relative; 
             cursor: crosshair;
             overflow: hidden; 
@@ -186,7 +197,9 @@
         /* --- GAME 3: THE ABYSSAL PATH --- */
         .bridge-container {
             position: relative; 
-            width: 100%; max-width: 900px; height: 450px;
+            width: 100%; 
+            max-width: 900px; 
+            aspect-ratio: 2/1; /* Maintain aspect ratio on resize */
             margin: 0 auto; 
             background-color: #020202;
             background-image: 
@@ -198,6 +211,7 @@
             box-shadow: inset 0 0 100px #000;
             overflow: hidden; 
             border-radius: 4px;
+            touch-action: none; /* Critical for mobile drag */
         }
 
         .cursor-none { cursor: none; }
@@ -241,7 +255,7 @@
         @keyframes flowStream { to { stroke-dashoffset: -60; } }
 
         #spirit-cursor { 
-            width: 16px; height: 16px; 
+            width: 30px; height: 30px; /* Larger for touch visibility */
             background: #fff; 
             border-radius: 50%; 
             position: absolute; 
@@ -279,7 +293,7 @@
 
         #bridge-overlay-ui {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            z-index: 30; text-align: center; pointer-events: none;
+            z-index: 30; text-align: center; pointer-events: none; width: 100%;
         }
         .overlay-msg {
             font-family: 'Cinzel'; font-size: 3rem; 
@@ -288,13 +302,13 @@
         }
 
         /* --- GAME 5: ROPERS (Updated) --- */
-        .vial-rack { display: flex; justify-content: center; gap: 30px; margin: 40px 0; perspective: 1000px; flex-wrap: wrap;}
-        .vial-unit { display: flex; flex-direction: column; align-items: center; width: 120px; transition: transform 0.3s, opacity 0.3s; }
+        .vial-rack { display: flex; justify-content: center; gap: 20px; margin: 40px 0; perspective: 1000px; flex-wrap: wrap;}
+        .vial-unit { display: flex; flex-direction: column; align-items: center; width: 100px; transition: transform 0.3s, opacity 0.3s; }
         .vial-unit:hover { transform: translateZ(20px); }
-        .vial-display { width: 120px; height: 240px; position: relative; }
+        .vial-display { width: 100px; height: 200px; position: relative; }
         .vial-bg { width: 100%; height: 100%; position: absolute; top: 0; left: 0; z-index: 1; filter: drop-shadow(0 10px 10px #000); opacity: 0.8; }
         .vial-mask { position: absolute; bottom: 0; left: 0; width: 100%; height: 0%; overflow: hidden; z-index: 2; transition: height 0.6s cubic-bezier(0.22, 1, 0.36, 1); filter: drop-shadow(0 0 15px var(--blood)); }
-        .vial-fg { width: 120px; height: 240px; position: absolute; bottom: 0; left: 0; }
+        .vial-fg { width: 100px; height: 200px; position: absolute; bottom: 0; left: 0; }
         .vial-unit input { background: rgba(0,0,0,0.5); border: none; border-bottom: 2px solid var(--gold-shadow); color: var(--gold-highlight); font-family: 'Cinzel'; font-size: 1.5rem; text-align: center; width: 80px; margin-top: 15px; padding: 5px; transition: 0.3s; }
         .vial-unit input:focus { outline: none; border-color: var(--gold-highlight); background: rgba(0,0,0,0.8); }
         
@@ -303,6 +317,39 @@
         .vial-danger .vial-mask { filter: drop-shadow(0 0 25px var(--blood-bright)); }
         .vial-danger input { border-color: var(--blood-bright); color: var(--blood-bright); font-weight: bold; }
 
+        /* --- MOBILE OPTIMIZATION --- */
+        @media (max-width: 768px) {
+            .screen { padding: 20px; width: 100%; margin: 0; border: none; border-radius: 0; height: 100vh; display: flex; flex-direction: column; justify-content: center; overflow-y: scroll;}
+            
+            /* Typography */
+            h1 { font-size: 2rem; }
+            h2 { font-size: 1.5rem; }
+            p { font-size: 1rem; margin-bottom: 20px; }
+            
+            /* Wheel */
+            .wheel-stage { width: 85vw; height: 85vw; }
+            .wheel-controls { gap: 4px; }
+            .wheel-btn { width: 40px; height: 40px; line-height: 40px; }
+
+            /* Dredges - Make columns flexible */
+            .grid-container { grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; max-width: 400px; }
+            
+            /* Bridge - Scaled via SVG aspect ratio */
+            .bridge-container { width: 100%; height: auto; }
+            .overlay-msg { font-size: 2rem; }
+            
+            /* Vials */
+            .vial-rack { gap: 10px; }
+            .vial-unit { width: 80px; }
+            .vial-display { width: 80px; height: 160px; }
+            .vial-fg { width: 80px; height: 160px; }
+            .vial-unit input { width: 60px; font-size: 1.2rem; }
+            
+            /* Buttons */
+            button { width: 100%; margin: 5px 0; padding: 12px; }
+            .back-btn { margin-top: 20px; }
+        }
+
     </style>
 </head>
 <body>
@@ -310,7 +357,7 @@
     <div id="hub" class="screen">
         <h1>The Cursed Carnival</h1>
         <p>Select an encounter to begin.</p>
-        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px;">
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 10px; width: 100%;">
             <button onclick="nav('game1')">I. Wheel of Horrors</button>
             <button onclick="nav('game2')">II. Nine Dredges</button>
             <button onclick="nav('game3')">III. The Spectral Bridge</button>
@@ -341,333 +388,4 @@
         <button class="back-btn" onclick="nav('hub')">Return to Hub</button>
 
         <div id="horror-modal" class="modal-overlay">
-            <div class="modal-content">
-                <div id="m-title" class="modal-title">TITLE</div>
-                <div id="m-desc" class="modal-desc">Description goes here.</div>
-                <button class="close-modal" onclick="closeModal()">Accept Fate</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="game2" class="screen hidden">
-        <h2>Whack-a-Dredge</h2>
-        <p>Roll a melee attack. On hit, click the Dredger. <br>On a miss, the DM will describe the consequences of your failure.</p>
-        <div class="grid-container" id="dredge-grid"></div>
-        <button class="back-btn" onclick="nav('hub')">Return to Hub</button>
-    </div>
-
-    <div id="game3" class="screen hidden">
-        <h2>The Spectral Bridge</h2>
-        <p>A wayward soul is trapped. Click the <span style="color:#39ff14">Green Orb</span> to bind the soul and guide it to the afterlife.</p>
-        
-        <div class="bridge-container cursor-pointer" id="bridge-ui">
-            <div id="spirit-cursor"></div>
-            
-            <div id="bridge-overlay-ui">
-                <div id="fail-msg" class="overlay-msg" style="color: var(--blood-bright)">FALLEN</div>
-                <div id="win-msg" class="overlay-msg" style="color: var(--gold-highlight)">ASCENDED</div>
-                <button id="reset-bridge-btn" onclick="resetBridge()" style="display:none; pointer-events: auto;">Resurrect Soul</button>
-            </div>
-            
-            <svg width="100%" height="100%" viewBox="0 0 900 450" preserveAspectRatio="none">
-                <defs>
-                    <filter id="ectoplasm">
-                        <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="4" result="noise" />
-                        <feDisplacementMap in="SourceGraphic" in2="noise" scale="15" />
-                        <feGaussianBlur stdDeviation="3" />
-                    </filter>
-                    <filter id="cursor-flicker">
-                        <feTurbulence type="fractalNoise" baseFrequency="0.1" numOctaves="2" />
-                        <feDisplacementMap in="SourceGraphic" scale="3" />
-                    </filter>
-                </defs>
-
-                <path id="bridge-glow" d="M 50 400 C 80 300, 150 150, 200 150 S 250 350, 300 400 S 400 300, 500 200 S 600 50, 650 50 S 800 200, 850 225" />
-                <path id="bridge-stream" d="M 50 400 C 80 300, 150 150, 200 150 S 250 350, 300 400 S 400 300, 500 200 S 600 50, 650 50 S 800 200, 850 225" />
-                <path id="bridge-core-vis" d="M 50 400 C 80 300, 150 150, 200 150 S 250 350, 300 400 S 400 300, 500 200 S 600 50, 650 50 S 800 200, 850 225" />
-                
-                <path id="bridge-hitbox" 
-                      d="M 50 400 C 80 300, 150 150, 200 150 S 250 350, 300 400 S 400 300, 500 200 S 600 50, 650 50 S 800 200, 850 225"
-                      onmouseenter="confirmOnPath()"
-                      onmouseleave="confirmOffPath()" />
-
-                <circle cx="50" cy="400" r="15" class="node start-active" id="start-node" onclick="beginTracing(event)" />
-                
-                <circle cx="850" cy="225" r="20" class="node end-zone" id="end-node" onmouseenter="checkWin()" />
-            </svg>
-        </div>
-
-        <button class="back-btn" onclick="nav('hub')">Return to Hub</button>
-    </div>
-
-    <div id="game5" class="screen hidden">
-        <h2>Specimen Feeding</h2>
-        <p>Fill the vials with blood. Input dice rolls. Beware: The <span style="color:var(--blood-bright)">Hungriest Specimen</span> will attack!</p>
-        
-        <div class="vial-rack">
-            <div class="vial-unit" id="vial-unit-1">
-                <div class="vial-display">
-                    <img src="assets/vial-empty.webp" class="vial-bg">
-                    <div class="vial-mask" id="mask-1"><img src="assets/vial-complete.webp" class="vial-fg"></div>
-                </div>
-                <input type="number" id="dmg-1" value="0" oninput="updateVials()">
-            </div>
-            <div class="vial-unit" id="vial-unit-2">
-                <div class="vial-display">
-                    <img src="assets/vial-empty.webp" class="vial-bg">
-                    <div class="vial-mask" id="mask-2"><img src="assets/vial-complete.webp" class="vial-fg"></div>
-                </div>
-                <input type="number" id="dmg-2" value="0" oninput="updateVials()">
-            </div>
-            <div class="vial-unit" id="vial-unit-3">
-                <div class="vial-display">
-                    <img src="assets/vial-empty.webp" class="vial-bg">
-                    <div class="vial-mask" id="mask-3"><img src="assets/vial-complete.webp" class="vial-fg"></div>
-                </div>
-                <input type="number" id="dmg-3" value="0" oninput="updateVials()">
-            </div>
-            <div class="vial-unit" id="vial-unit-4">
-                <div class="vial-display">
-                    <img src="assets/vial-empty.webp" class="vial-bg">
-                    <div class="vial-mask" id="mask-4"><img src="assets/vial-complete.webp" class="vial-fg"></div>
-                </div>
-                <input type="number" id="dmg-4" value="0" oninput="updateVials()">
-            </div>
-        </div>
-        <button class="back-btn" onclick="nav('hub')">Return to Hub</button>
-    </div>
-
-    <script>
-        // --- NAVIGATION ---
-        window.nav = function(id) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
-            const active = document.getElementById(id);
-            if(active) {
-                active.classList.remove('hidden');
-                active.style.animation = 'none';
-                active.offsetHeight; /* trigger reflow */
-                active.style.animation = 'fadeIn 0.6s forwards ease-out';
-                if(id === 'game3') resetBridge();
-            }
-        }
-
-        // --- GAME 1: WHEEL OF HORRORS (ANGLES MAPPED) ---
-        // Skull is Slice 5 (202.5 deg). Heart is Slice 3 (112.5 deg).
-        // The array is ordered by Button Number (1-8).
-        const horrorOutcomes = [
-            { angle: 202.5, title: "The Skull", desc: "A flurry of poison darts erupts from the walls. <br><br><strong>DEX Save DC 15</strong> or take <strong>4d6 Poison</strong> damage." },
-            { angle: 22.5,  title: "The Moon",  desc: "Magical darkness fills the room (1 Min). Darkvision does not penetrate." },
-            { angle: 247.5, title: "Diamond",   desc: "A high-pitched ringing shatters your concentration. <br><br><strong>INT Save DC 14</strong> or take <strong>3d8 Psychic</strong> damage." },
-            { angle: 292.5, title: "Horseshoe", desc: "Gravity Well: The floor becomes difficult terrain. All movement speeds are halved." },
-            { angle: 67.5,  title: "The Star",  desc: "Mirror Image: A duplicate of the boss appears. Attacks against it have a 50% chance to miss." },
-            { angle: 157.5, title: "Clover",    desc: "Silence: A sphere of absolute silence centers on the party." },
-            { angle: 337.5, title: "The Sun",   desc: "Healing spells cast within the room are maximized." },
-            { angle: 112.5, title: "The Heart", desc: "<span style='color:var(--gold-highlight)'>A moment of respite.</span><br>The party regains <strong>2d8 + 4 HP</strong>." }
-        ];
-
-        let currentDeg = 0;
-        window.spinWheel = function(val) {
-            const wheel = document.getElementById('wheel-img');
-            
-            // Get data for this button (1-indexed input)
-            const data = horrorOutcomes[val - 1];
-            if(!data) return;
-
-            // We want the target angle to end up at 0 (Top)
-            // If angle is 202.5, we spin -202.5 to bring it to top.
-            // Add 1080 (3 spins) for effect.
-            const baseRot = 1080;
-            const targetRot = data.angle;
-            
-            // Random Jitter (-10 to +10 degrees) to feel analog
-            const jitter = Math.floor(Math.random() * 20) - 10;
-            
-            // Accumulate rotation so we don't snap back
-            currentDeg = currentDeg + baseRot + (360 - (currentDeg % 360)) + targetRot + jitter;
-            
-            // We rotate Negative to go Clockwise visually relative to pointer
-            wheel.style.transform = `rotate(-${currentDeg}deg)`; 
-            
-            setTimeout(() => {
-                showModal(val);
-            }, 5000); 
-        }
-
-        function showModal(val) {
-            const data = horrorOutcomes[val - 1];
-            if(!data) return;
-            document.getElementById('m-title').innerHTML = data.title;
-            document.getElementById('m-desc').innerHTML = data.desc;
-            document.getElementById('horror-modal').classList.add('modal-active');
-        }
-
-        window.closeModal = function() {
-            document.getElementById('horror-modal').classList.remove('modal-active');
-        }
-
-        // --- GAME 2: DREDGES ---
-        let currentDredgeIdx = -1;
-        function initDredges() {
-            const grid = document.getElementById('dredge-grid');
-            if(!grid) return;
-            grid.innerHTML = '';
-            for(let i=0; i<9; i++) {
-                const cell = document.createElement('div');
-                cell.className = 'dredge-cell';
-                cell.id = `cell-${i}`;
-                
-                const poison = document.createElement('div');
-                poison.className = 'poison-overlay';
-                cell.appendChild(poison);
-
-                const monster = document.createElement('img');
-                monster.src = 'assets/dretch.webp';
-                monster.className = 'dretch-img';
-                monster.onclick = (e) => whackDredge(e);
-                cell.appendChild(monster);
-
-                const portal = document.createElement('img');
-                portal.src = 'assets/portal.webp';
-                portal.className = 'portal-img';
-                cell.appendChild(portal);
-
-                grid.appendChild(cell);
-            }
-            setTimeout(spawnDredge, 500);
-        }
-
-        function spawnDredge() {
-            document.querySelectorAll('.dretch-active').forEach(img => img.classList.remove('dretch-active'));
-            let newIdx;
-            do { newIdx = Math.floor(Math.random() * 9); } while(newIdx === currentDredgeIdx);
-            currentDredgeIdx = newIdx;
-            const cell = document.getElementById(`cell-${currentDredgeIdx}`);
-            if(cell) cell.querySelector('.dretch-img').classList.add('dretch-active');
-        }
-
-        function whackDredge(e) {
-            e.stopPropagation();
-            document.querySelectorAll('.dretch-active').forEach(img => img.classList.remove('dretch-active'));
-            setTimeout(spawnDredge, 500);
-        }
-
-        // --- GAME 3: BRIDGE ---
-        let tracingActive = false;
-        let isOnPath = false;
-        let hasWon = false;
-
-        const bridgeUI = document.getElementById('bridge-ui');
-        if(bridgeUI) {
-            bridgeUI.addEventListener('mousemove', (e) => {
-                if (!tracingActive) return;
-                const rect = bridgeUI.getBoundingClientRect();
-                const cursor = document.getElementById('spirit-cursor');
-                cursor.style.left = (e.clientX - rect.left) + 'px';
-                cursor.style.top = (e.clientY - rect.top) + 'px';
-            });
-        }
-
-        window.resetBridge = function() {
-            tracingActive = false;
-            isOnPath = false;
-            hasWon = false;
-            const ui = document.getElementById('bridge-ui');
-            ui.classList.remove('fail-state');
-            ui.classList.remove('cursor-none');
-            ui.classList.add('cursor-pointer');
-            document.getElementById('spirit-cursor').style.display = 'none';
-            document.getElementById('fail-msg').style.display = 'none';
-            document.getElementById('win-msg').style.display = 'none';
-            document.getElementById('reset-bridge-btn').style.display = 'none';
-            document.getElementById('start-node').classList.add('start-active');
-        }
-
-        window.beginTracing = function(e) {
-            if (hasWon) return;
-            tracingActive = true;
-            isOnPath = true; 
-            const ui = document.getElementById('bridge-ui');
-            ui.classList.add('cursor-none');
-            ui.classList.remove('cursor-pointer');
-            const cursor = document.getElementById('spirit-cursor');
-            cursor.style.display = 'block';
-            const rect = ui.getBoundingClientRect();
-            cursor.style.left = (e.clientX - rect.left) + 'px';
-            cursor.style.top = (e.clientY - rect.top) + 'px';
-            document.getElementById('start-node').classList.remove('start-active');
-        }
-
-        window.confirmOnPath = function() {
-            if (!tracingActive) return;
-            isOnPath = true;
-        }
-
-        window.confirmOffPath = function() {
-            if (!tracingActive || hasWon) return;
-            isOnPath = false;
-            triggerFail();
-        }
-
-        function triggerFail() {
-            tracingActive = false;
-            const ui = document.getElementById('bridge-ui');
-            ui.classList.add('fail-state');
-            document.getElementById('fail-msg').style.display = 'block';
-            document.getElementById('reset-bridge-btn').style.display = 'inline-block';
-            ui.classList.remove('cursor-none');
-            ui.classList.add('cursor-pointer');
-        }
-
-        window.checkWin = function() {
-            if (tracingActive && isOnPath) {
-                hasWon = true;
-                tracingActive = false;
-                document.getElementById('win-msg').style.display = 'block';
-                const ui = document.getElementById('bridge-ui');
-                ui.classList.remove('cursor-none');
-                ui.classList.add('cursor-pointer');
-            }
-        }
-
-        // --- GAME 5: ROPERS ---
-        window.updateVials = function() {
-            const maxHP = 50; 
-            const inputs = [
-                { id: 1, val: parseInt(document.getElementById(`dmg-1`).value) || 0 },
-                { id: 2, val: parseInt(document.getElementById(`dmg-2`).value) || 0 },
-                { id: 3, val: parseInt(document.getElementById(`dmg-3`).value) || 0 },
-                { id: 4, val: parseInt(document.getElementById(`dmg-4`).value) || 0 }
-            ];
-
-            inputs.forEach(item => {
-                let pct = (item.val / maxHP) * 100;
-                if(pct > 100) pct = 100;
-                document.getElementById(`mask-${item.id}`).style.height = pct + '%';
-            });
-
-            const allZero = inputs.every(i => i.val === 0);
-            if (allZero) {
-                document.querySelectorAll('.vial-unit').forEach(u => {
-                    u.classList.remove('vial-danger', 'vial-safe');
-                });
-                return;
-            }
-
-            const minVal = Math.min(...inputs.map(i => i.val));
-            inputs.forEach(item => {
-                const unit = document.getElementById(`vial-unit-${item.id}`);
-                if (item.val === minVal) {
-                    unit.classList.add('vial-danger');
-                    unit.classList.remove('vial-safe');
-                } else {
-                    unit.classList.add('vial-safe');
-                    unit.classList.remove('vial-danger');
-                }
-            });
-        }
-
-        // --- INIT ---
-        initDredges();
-    </script>
-</body>
-</html>
+            <div class="modal-content
