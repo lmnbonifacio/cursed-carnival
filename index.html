@@ -40,17 +40,17 @@
             justify-content: center;
             min-height: 100vh;
             margin: 0;
-            user-select: none;
             overflow-y: auto;
-            overflow-x: hidden; /* Prevent horizontal scroll */
+            overflow-x: hidden;
         }
 
+        /* FIX 1: Move overlay behind everything with z-index -1 */
         body::after {
             content: "";
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: radial-gradient(circle at center, transparent 30%, #000 100%);
             pointer-events: none;
-            z-index: 0;
+            z-index: -1; 
         }
 
         .screen {
@@ -91,6 +91,7 @@
         h2 { font-size: 2rem; border-bottom: 1px solid rgba(197, 160, 89, 0.2); padding-bottom: 15px; display: inline-block;}
         p { font-size: 1.1rem; color: #aaa; margin-bottom: 40px; font-style: italic; letter-spacing: 0.05em; }
 
+        /* FIX 3: Add touch-action manipulation to ensure clicks register immediately */
         button {
             background: rgba(0,0,0,0.6);
             color: var(--gold-base);
@@ -105,7 +106,7 @@
             transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
-            touch-action: manipulation; /* Improves touch response */
+            touch-action: manipulation; 
         }
         button:hover { border-color: var(--gold-highlight); color: var(--gold-highlight); transform: translateY(-2px); box-shadow: 0 0 15px rgba(197, 160, 89, 0.3); }
         button:active { transform: scale(0.95); }
@@ -125,23 +126,26 @@
             width: 500px; 
             height: 500px; 
             margin: 0 auto 30px auto; 
-            max-width: 100%; /* Safety for mobile */
+            max-width: 100%;
         }
         #wheel-img { width: 100%; height: 100%; transition: transform 5s cubic-bezier(0.2, 0.8, 0.2, 1); filter: drop-shadow(0 0 30px rgba(0,0,0,0.9)); }
         #pointer-img { position: absolute; top: -5%; left: 50%; transform: translateX(-50%); width: 15%; z-index: 10; filter: drop-shadow(0 5px 10px black); }
         .wheel-controls { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
         .wheel-btn { width: 50px; height: 50px; padding: 0; border-radius: 50%; line-height: 50px; }
         
-        /* Modal Popup */
+        /* FIX 2: Modal Overlay uses visibility: hidden to prevent invisible blocking */
         .modal-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); z-index: 100;
             display: flex; align-items: center; justify-content: center;
-            opacity: 0; pointer-events: none; transition: opacity 0.3s;
+            opacity: 0; 
+            visibility: hidden; /* Added */
+            transition: opacity 0.3s, visibility 0.3s;
             backdrop-filter: blur(5px);
             padding: 20px;
         }
-        .modal-active { opacity: 1; pointer-events: auto; }
+        .modal-active { opacity: 1; visibility: visible; pointer-events: auto; }
+        
         .modal-content {
             background: #111; border: 2px solid var(--gold-base);
             padding: 40px; max-width: 600px; width: 100%; text-align: center;
@@ -166,8 +170,8 @@
             margin: 20px auto;
         }
         .dredge-cell {
-            width: 100%; /* Fluid width */
-            aspect-ratio: 1/1; /* Keeps it square */
+            width: 100%; 
+            aspect-ratio: 1/1; 
             position: relative; 
             cursor: crosshair;
             overflow: hidden; 
@@ -199,7 +203,7 @@
             position: relative; 
             width: 100%; 
             max-width: 900px; 
-            aspect-ratio: 2/1; /* Maintain aspect ratio on resize */
+            aspect-ratio: 2/1; 
             margin: 0 auto; 
             background-color: #020202;
             background-image: 
@@ -211,7 +215,7 @@
             box-shadow: inset 0 0 100px #000;
             overflow: hidden; 
             border-radius: 4px;
-            touch-action: none; /* Critical for mobile drag */
+            touch-action: none; 
         }
 
         .cursor-none { cursor: none; }
@@ -255,7 +259,7 @@
         @keyframes flowStream { to { stroke-dashoffset: -60; } }
 
         #spirit-cursor { 
-            width: 30px; height: 30px; /* Larger for touch visibility */
+            width: 30px; height: 30px; 
             background: #fff; 
             border-radius: 50%; 
             position: absolute; 
@@ -388,4 +392,381 @@
         <button class="back-btn" onclick="nav('hub')">Return to Hub</button>
 
         <div id="horror-modal" class="modal-overlay">
-            <div class="modal-content
+            <div class="modal-content">
+                <div id="m-title" class="modal-title">TITLE</div>
+                <div id="m-desc" class="modal-desc">Description goes here.</div>
+                <button class="close-modal" onclick="closeModal()">Accept Fate</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game2" class="screen hidden">
+        <h2>Whack-a-Dredge</h2>
+        <p>Roll a melee attack. On hit, tap the Dredger.</p>
+        <div class="grid-container" id="dredge-grid"></div>
+        <button class="back-btn" onclick="nav('hub')">Return to Hub</button>
+    </div>
+
+    <div id="game3" class="screen hidden">
+        <h2>The Spectral Bridge</h2>
+        <p>Drag the soul from <span style="color:#39ff14">Green</span> to <span style="color:var(--spirit)">Blue</span>. Do not touch the void.</p>
+        
+        <div class="bridge-container cursor-pointer" id="bridge-ui">
+            <div id="spirit-cursor"></div>
+            
+            <div id="bridge-overlay-ui">
+                <div id="fail-msg" class="overlay-msg" style="color: var(--blood-bright)">FALLEN</div>
+                <div id="win-msg" class="overlay-msg" style="color: var(--gold-highlight)">ASCENDED</div>
+                <button id="reset-bridge-btn" onclick="resetBridge()" style="display:none; pointer-events: auto;">Resurrect Soul</button>
+            </div>
+            
+            <svg width="100%" height="100%" viewBox="0 0 900 450" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <filter id="ectoplasm">
+                        <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="4" result="noise" />
+                        <feDisplacementMap in="SourceGraphic" in2="noise" scale="15" />
+                        <feGaussianBlur stdDeviation="3" />
+                    </filter>
+                    <filter id="cursor-flicker">
+                        <feTurbulence type="fractalNoise" baseFrequency="0.1" numOctaves="2" />
+                        <feDisplacementMap in="SourceGraphic" scale="3" />
+                    </filter>
+                </defs>
+
+                <path id="bridge-glow" d="M 50 400 C 80 300, 150 150, 200 150 S 250 350, 300 400 S 400 300, 500 200 S 600 50, 650 50 S 800 200, 850 225" />
+                <path id="bridge-stream" d="M 50 400 C 80 300, 150 150, 200 150 S 250 350, 300 400 S 400 300, 500 200 S 600 50, 650 50 S 800 200, 850 225" />
+                <path id="bridge-core-vis" d="M 50 400 C 80 300, 150 150, 200 150 S 250 350, 300 400 S 400 300, 500 200 S 600 50, 650 50 S 800 200, 850 225" />
+                
+                <path id="bridge-hitbox" 
+                      d="M 50 400 C 80 300, 150 150, 200 150 S 250 350, 300 400 S 400 300, 500 200 S 600 50, 650 50 S 800 200, 850 225"
+                      onmouseenter="confirmOnPath()"
+                      onmouseleave="confirmOffPath()" />
+
+                <circle cx="50" cy="400" r="15" class="node start-active" id="start-node" onclick="beginTracing(event)" />
+                
+                <circle cx="850" cy="225" r="20" class="node end-zone" id="end-node" onmouseenter="checkWin()" />
+            </svg>
+        </div>
+
+        <button class="back-btn" onclick="nav('hub')">Return to Hub</button>
+    </div>
+
+    <div id="game5" class="screen hidden">
+        <h2>Specimen Feeding</h2>
+        <p>Fill the vials with blood. Input dice rolls. Beware the <span style="color:var(--blood-bright)">Hungriest Specimen</span>.</p>
+        
+        <div class="vial-rack">
+            <div class="vial-unit" id="vial-unit-1">
+                <div class="vial-display">
+                    <img src="assets/vial-empty.webp" class="vial-bg">
+                    <div class="vial-mask" id="mask-1"><img src="assets/vial-complete.webp" class="vial-fg"></div>
+                </div>
+                <input type="number" id="dmg-1" value="0" oninput="updateVials()">
+            </div>
+            <div class="vial-unit" id="vial-unit-2">
+                <div class="vial-display">
+                    <img src="assets/vial-empty.webp" class="vial-bg">
+                    <div class="vial-mask" id="mask-2"><img src="assets/vial-complete.webp" class="vial-fg"></div>
+                </div>
+                <input type="number" id="dmg-2" value="0" oninput="updateVials()">
+            </div>
+            <div class="vial-unit" id="vial-unit-3">
+                <div class="vial-display">
+                    <img src="assets/vial-empty.webp" class="vial-bg">
+                    <div class="vial-mask" id="mask-3"><img src="assets/vial-complete.webp" class="vial-fg"></div>
+                </div>
+                <input type="number" id="dmg-3" value="0" oninput="updateVials()">
+            </div>
+            <div class="vial-unit" id="vial-unit-4">
+                <div class="vial-display">
+                    <img src="assets/vial-empty.webp" class="vial-bg">
+                    <div class="vial-mask" id="mask-4"><img src="assets/vial-complete.webp" class="vial-fg"></div>
+                </div>
+                <input type="number" id="dmg-4" value="0" oninput="updateVials()">
+            </div>
+        </div>
+        <button class="back-btn" onclick="nav('hub')">Return to Hub</button>
+    </div>
+
+    <script>
+        // --- NAVIGATION ---
+        window.nav = function(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.add('hidden'));
+            const active = document.getElementById(id);
+            if(active) {
+                active.classList.remove('hidden');
+                active.style.animation = 'none';
+                active.offsetHeight; /* trigger reflow */
+                active.style.animation = 'fadeIn 0.6s forwards ease-out';
+                if(id === 'game3') resetBridge();
+            }
+        }
+
+        // --- GAME 1: WHEEL OF HORRORS ---
+        const horrorOutcomes = [
+            { angle: 202.5, title: "The Skull", desc: "A flurry of poison darts erupts from the walls. <br><br><strong>DEX Save DC 15</strong> or take <strong>4d6 Poison</strong> damage." },
+            { angle: 22.5,  title: "The Moon",  desc: "Magical darkness fills the room (1 Min). Darkvision does not penetrate." },
+            { angle: 247.5, title: "Diamond",   desc: "A high-pitched ringing shatters your concentration. <br><br><strong>INT Save DC 14</strong> or take <strong>3d8 Psychic</strong> damage." },
+            { angle: 292.5, title: "Horseshoe", desc: "Gravity Well: The floor becomes difficult terrain. All movement speeds are halved." },
+            { angle: 67.5,  title: "The Star",  desc: "Mirror Image: A duplicate of the boss appears. Attacks against it have a 50% chance to miss." },
+            { angle: 157.5, title: "Clover",    desc: "Silence: A sphere of absolute silence centers on the party." },
+            { angle: 337.5, title: "The Sun",   desc: "Healing spells cast within the room are maximized." },
+            { angle: 112.5, title: "The Heart", desc: "<span style='color:var(--gold-highlight)'>A moment of respite.</span><br>The party regains <strong>2d8 + 4 HP</strong>." }
+        ];
+
+        let currentDeg = 0;
+        window.spinWheel = function(val) {
+            const wheel = document.getElementById('wheel-img');
+            const data = horrorOutcomes[val - 1];
+            if(!data) return;
+
+            const baseRot = 1080;
+            const targetRot = data.angle;
+            const jitter = Math.floor(Math.random() * 20) - 10;
+            currentDeg = currentDeg + baseRot + (360 - (currentDeg % 360)) + targetRot + jitter;
+            
+            wheel.style.transform = `rotate(-${currentDeg}deg)`; 
+            
+            setTimeout(() => {
+                showModal(val);
+            }, 5000); 
+        }
+
+        function showModal(val) {
+            const data = horrorOutcomes[val - 1];
+            if(!data) return;
+            document.getElementById('m-title').innerHTML = data.title;
+            document.getElementById('m-desc').innerHTML = data.desc;
+            document.getElementById('horror-modal').classList.add('modal-active');
+        }
+
+        window.closeModal = function() {
+            document.getElementById('horror-modal').classList.remove('modal-active');
+        }
+
+        // --- GAME 2: DREDGES ---
+        let currentDredgeIdx = -1;
+        function initDredges() {
+            const grid = document.getElementById('dredge-grid');
+            if(!grid) return;
+            grid.innerHTML = '';
+            for(let i=0; i<9; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'dredge-cell';
+                cell.id = `cell-${i}`;
+                
+                const poison = document.createElement('div');
+                poison.className = 'poison-overlay';
+                cell.appendChild(poison);
+
+                const monster = document.createElement('img');
+                monster.src = 'assets/dretch.webp';
+                monster.className = 'dretch-img';
+                
+                // Add touchstart for better mobile responsiveness
+                monster.addEventListener('touchstart', (e) => {
+                    e.preventDefault(); // Prevent double firing
+                    whackDredge(e);
+                });
+                monster.onclick = (e) => whackDredge(e);
+                
+                cell.appendChild(monster);
+
+                const portal = document.createElement('img');
+                portal.src = 'assets/portal.webp';
+                portal.className = 'portal-img';
+                cell.appendChild(portal);
+
+                grid.appendChild(cell);
+            }
+            setTimeout(spawnDredge, 500);
+        }
+
+        function spawnDredge() {
+            document.querySelectorAll('.dretch-active').forEach(img => img.classList.remove('dretch-active'));
+            let newIdx;
+            do { newIdx = Math.floor(Math.random() * 9); } while(newIdx === currentDredgeIdx);
+            currentDredgeIdx = newIdx;
+            const cell = document.getElementById(`cell-${currentDredgeIdx}`);
+            if(cell) cell.querySelector('.dretch-img').classList.add('dretch-active');
+        }
+
+        function whackDredge(e) {
+            e.stopPropagation();
+            document.querySelectorAll('.dretch-active').forEach(img => img.classList.remove('dretch-active'));
+            setTimeout(spawnDredge, 500);
+        }
+
+        // --- GAME 3: BRIDGE (UPDATED FOR TOUCH) ---
+        let tracingActive = false;
+        let isOnPath = false;
+        let hasWon = false;
+
+        const bridgeUI = document.getElementById('bridge-ui');
+        const cursor = document.getElementById('spirit-cursor');
+
+        // MOUSE EVENTS
+        if(bridgeUI) {
+            bridgeUI.addEventListener('mousemove', (e) => {
+                if (!tracingActive) return;
+                moveCursor(e.clientX, e.clientY);
+            });
+            
+            // TOUCH EVENTS
+            bridgeUI.addEventListener('touchmove', (e) => {
+                if(!tracingActive) return;
+                e.preventDefault(); // Prevent page scrolling while playing
+                const touch = e.touches[0];
+                moveCursor(touch.clientX, touch.clientY);
+                
+                // Manual Collision Check for Touch
+                // Because onmouseenter doesn't work with touch dragging
+                checkTouchCollision(touch.clientX, touch.clientY);
+            }, { passive: false });
+        }
+
+        function moveCursor(x, y) {
+            const rect = bridgeUI.getBoundingClientRect();
+            // Constrain cursor to box
+            const relX = x - rect.left;
+            const relY = y - rect.top;
+            
+            cursor.style.left = relX + 'px';
+            cursor.style.top = relY + 'px';
+        }
+
+        function checkTouchCollision(x, y) {
+            if(hasWon) return;
+            
+            // Get element under finger
+            const el = document.elementFromPoint(x, y);
+            
+            // Check if we hit the end zone
+            if(el && el.id === 'end-node') {
+                checkWin();
+                return;
+            }
+            
+            // Check if we are ON the path
+            // The SVG structure puts the hitbox on top. 
+            if(el && el.id === 'bridge-hitbox') {
+                isOnPath = true;
+            } else if (el && el.id === 'spirit-cursor') {
+                 // Ignore self
+            } else {
+                // If we are touching the background, we fail
+                if(tracingActive) confirmOffPath();
+            }
+        }
+
+        window.resetBridge = function() {
+            tracingActive = false;
+            isOnPath = false;
+            hasWon = false;
+            bridgeUI.classList.remove('fail-state');
+            bridgeUI.classList.remove('cursor-none');
+            bridgeUI.classList.add('cursor-pointer');
+            cursor.style.display = 'none';
+            document.getElementById('fail-msg').style.display = 'none';
+            document.getElementById('win-msg').style.display = 'none';
+            document.getElementById('reset-bridge-btn').style.display = 'none';
+            document.getElementById('start-node').classList.add('start-active');
+        }
+
+        window.beginTracing = function(e) {
+            e.preventDefault();
+            if (hasWon) return;
+            tracingActive = true;
+            isOnPath = true; 
+            bridgeUI.classList.add('cursor-none');
+            bridgeUI.classList.remove('cursor-pointer');
+            
+            cursor.style.display = 'block';
+            
+            // Handle both touch/mouse coordinates
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+            if(e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            }
+            
+            moveCursor(clientX, clientY);
+            document.getElementById('start-node').classList.remove('start-active');
+        }
+        
+        // Add touchstart listener to the start node specifically
+        document.getElementById('start-node').addEventListener('touchstart', beginTracing);
+
+        window.confirmOnPath = function() {
+            if (!tracingActive) return;
+            isOnPath = true;
+        }
+
+        window.confirmOffPath = function() {
+            if (!tracingActive || hasWon) return;
+            isOnPath = false;
+            triggerFail();
+        }
+
+        function triggerFail() {
+            tracingActive = false;
+            bridgeUI.classList.add('fail-state');
+            document.getElementById('fail-msg').style.display = 'block';
+            document.getElementById('reset-bridge-btn').style.display = 'inline-block';
+            bridgeUI.classList.remove('cursor-none');
+            bridgeUI.classList.add('cursor-pointer');
+        }
+
+        window.checkWin = function() {
+            if (tracingActive && isOnPath) {
+                hasWon = true;
+                tracingActive = false;
+                document.getElementById('win-msg').style.display = 'block';
+                bridgeUI.classList.remove('cursor-none');
+                bridgeUI.classList.add('cursor-pointer');
+            }
+        }
+
+        // --- GAME 5: ROPERS ---
+        window.updateVials = function() {
+            const maxHP = 50; 
+            const inputs = [
+                { id: 1, val: parseInt(document.getElementById(`dmg-1`).value) || 0 },
+                { id: 2, val: parseInt(document.getElementById(`dmg-2`).value) || 0 },
+                { id: 3, val: parseInt(document.getElementById(`dmg-3`).value) || 0 },
+                { id: 4, val: parseInt(document.getElementById(`dmg-4`).value) || 0 }
+            ];
+
+            inputs.forEach(item => {
+                let pct = (item.val / maxHP) * 100;
+                if(pct > 100) pct = 100;
+                document.getElementById(`mask-${item.id}`).style.height = pct + '%';
+            });
+
+            const allZero = inputs.every(i => i.val === 0);
+            if (allZero) {
+                document.querySelectorAll('.vial-unit').forEach(u => {
+                    u.classList.remove('vial-danger', 'vial-safe');
+                });
+                return;
+            }
+
+            const minVal = Math.min(...inputs.map(i => i.val));
+            inputs.forEach(item => {
+                const unit = document.getElementById(`vial-unit-${item.id}`);
+                if (item.val === minVal) {
+                    unit.classList.add('vial-danger');
+                    unit.classList.remove('vial-safe');
+                } else {
+                    unit.classList.add('vial-safe');
+                    unit.classList.remove('vial-danger');
+                }
+            });
+        }
+
+        // --- INIT ---
+        initDredges();
+    </script>
+</body>
+</html>
