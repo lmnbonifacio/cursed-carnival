@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>The Spectral Bridge</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .bridge-container {
+            position: relative; width: 100%; max-width: 900px; aspect-ratio: 2/1; margin: 0 auto; 
+            background-color: #020202;
+            background-image: 
+                radial-gradient(circle at 50% 50%, #1a1a2e 0%, transparent 60%),
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 100% 100%, 40px 40px, 40px 40px;
+            border: 1px solid #333; box-shadow: inset 0 0 100px #000;
+            overflow: hidden; border-radius: 4px; touch-action: none; 
+        }
+
+        .cursor-none { cursor: none; }
+        .cursor-pointer { cursor: pointer; }
+
+        /* SVG Styles */
+        #bridge-hitbox { fill: none; stroke: transparent; stroke-width: 25px; pointer-events: stroke; }
+        #bridge-glow {
+            fill: none; stroke: var(--spirit); stroke-width: 40px;
+            filter: url(#ectoplasm); opacity: 0.3; stroke-linecap: round; transition: stroke 0.3s;
+        }
+        #bridge-stream {
+            fill: none; stroke: #fff; stroke-width: 15px; stroke-dasharray: 20, 40; 
+            filter: blur(4px); opacity: 0.6; animation: flowStream 2s linear infinite;
+        }
+        #bridge-core-vis { fill: none; stroke: #fff; stroke-width: 2px; opacity: 0.8; filter: drop-shadow(0 0 5px #fff); }
+        
+        @keyframes flowStream { to { stroke-dashoffset: -60; } }
+
+        #spirit-cursor { 
+            width: 30px; height: 30px; background: #fff; border-radius: 50%; 
+            position: absolute; pointer-events: none; transform: translate(-50%, -50%); 
+            z-index: 20; display: none; mix-blend-mode: screen;
+            box-shadow: 0 0 10px #fff, 0 0 20px var(--spirit), 0 0 40px var(--spirit);
+            filter: url(#cursor-flicker);
+        }
+
+        /* Logic States */
+        .fail-state { animation: glitch 0.2s cubic-bezier(.25, .46, .45, .94) both infinite; box-shadow: inset 0 0 150px var(--blood) !important; }
+        .fail-state #bridge-glow { stroke: var(--blood); opacity: 0.8; }
+        .fail-state #bridge-stream { stroke: var(--blood-bright); }
+        
+        @keyframes glitch { 
+            0% { transform: translate(0); } 20% { transform: translate(-2px, 2px); } 
+            40% { transform: translate(-2px, -2px); } 60% { transform: translate(2px, 2px); } 
+            80% { transform: translate(2px, -2px); } 100% { transform: translate(0); } 
+        }
+
+        .node { fill: var(--gold-base); cursor: pointer; transition: fill 0.3s, r 0.3s; }
+        .node:hover { fill: #fff; r: 18px; }
+        .start-active { fill: #39ff14; filter: drop-shadow(0 0 10px #39ff14); animation: pulse 1s infinite; }
+        .end-zone { fill: var(--spirit); opacity: 0.5; }
+        
+        @keyframes pulse { 0% { r: 15px; opacity: 1; } 50% { r: 20px; opacity: 0.6; } 100% { r: 15px; opacity: 1; } }
+
+        #bridge-overlay-ui {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            z-index: 30; text-align: center; pointer-events: none; width: 100%;
+        }
+        .overlay-msg { font-family: 'Cinzel'; font-size: 3rem; text-shadow: 0 0 20px #000; display: none; }
+        
+        @media (max-width: 768px) {
+            .bridge-container { width: 100%; height: auto; }
+            .overlay-msg { font-size: 2rem; }
+        }
+    </style>
+</head>
+<body>
+    <div class="screen">
+        <h2>The Spectral Bridge</h2>
+        <p>Drag the soul from <span style="color:#39ff14">Green</span> to <span style="color:var(--spirit)">Blue</span>. Do not touch the void.</p>
+        
+        <div class="bridge-container cursor-pointer" id="bridge-ui">
+            <div id="spirit-cursor"></div>
+            
+            <div id="bridge-overlay-ui">
+                <div id="fail-msg" class="overlay-msg" style="color: var(--blood-bright)">FALLEN</div>
+                <div id="win-msg" class="overlay-msg" style="color: var(--gold-highlight)">ASCENDED</div>
+                <button id="reset-bridge-btn" onclick="resetBridge()" style="display:none; pointer-events: auto;">Resurrect Soul</button>
+            </div>
+            
+            <svg width="100%" height="100%" viewBox="0 0 900 450" preserveAspectRatio="xMidYMid meet">
+                <defs>
+                    <filter id="ectoplasm">
+                        <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="4" result="noise" />
+                        <feDisplacementMap in="SourceGraphic" in2="noise" scale="15" />
+                        <feGaussianBlur stdDeviation="3" />
+                    </filter>
+                    <filter id="cursor-flicker">
+                        <feTurbulence type="fractalNoise" baseFrequency="0.1" numOctaves="2" />
+                        <feDisplacementMap in="SourceGraphic" scale="3" />
+                    </filter>
+                </defs>
+
+                <path id="bridge-glow" d="M 50 400 C 80 300, 150 150, 200 150 S 250 350, 300 400 S 400 300, 500 200 S 600 50, 650 50 S 800 200, 850 225" />
+                <path id="bridge-stream" d="M 50 400 C 80 300, 150 150, 200 150 S 250 350, 300 400 S 400 300, 500 200 S 600 50, 650 50 S 800 200, 850 225" />
+                <path id="bridge-core-vis" d="M 50 400 C 80 300, 150 150, 200 150 S 250 350, 300 400 S 400 300, 500 200 S 600 50, 650 50 S 800 200, 850 225" />
+                
+                <path id="bridge-hitbox" 
+                      d="M 50 400 C 80 300, 150 150, 200 150 S 250 350, 300 400 S 400 300, 500 200 S 600 50, 650 50 S 800 200, 850 225"
+                      onmouseenter="confirmOnPath()"
+                      onmouseleave="confirmOffPath()" />
+
+                <circle cx="50" cy="400" r="15" class="node start-active" id="start-node" />
+                <circle cx="850" cy="225" r="20" class="node end-zone" id="end-node" onmouseenter="checkWin()" />
+            </svg>
+        </div>
+
+        <button class="back-btn" onclick="location.href='index.html'">Return to Hub</button>
+    </div>
+
+    <script>
+        let tracingActive = false;
+        let isOnPath = false;
+        let hasWon = false;
+
+        const bridgeUI = document.getElementById('bridge-ui');
+        const cursor = document.getElementById('spirit-cursor');
+
+        // MOUSE & TOUCH LOGIC
+        if(bridgeUI) {
+            bridgeUI.addEventListener('mousemove', (e) => {
+                if (!tracingActive) return;
+                moveCursor(e.clientX, e.clientY);
+            });
+            
+            bridgeUI.addEventListener('touchmove', (e) => {
+                if(!tracingActive) return;
+                e.preventDefault(); 
+                const touch = e.touches[0];
+                moveCursor(touch.clientX, touch.clientY);
+                checkTouchCollision(touch.clientX, touch.clientY);
+            }, { passive: false });
+        }
+
+        function moveCursor(x, y) {
+            const rect = bridgeUI.getBoundingClientRect();
+            const relX = x - rect.left;
+            const relY = y - rect.top;
+            cursor.style.left = relX + 'px';
+            cursor.style.top = relY + 'px';
+        }
+
+        function checkTouchCollision(x, y) {
+            if(hasWon) return;
+            const el = document.elementFromPoint(x, y);
+            if(el && el.id === 'end-node') {
+                checkWin();
+                return;
+            }
+            if(el && el.id === 'bridge-hitbox') {
+                isOnPath = true;
+            } else if (el && el.id === 'spirit-cursor') {
+                 // ignore self
+            } else {
+                if(tracingActive) confirmOffPath();
+            }
+        }
+
+        function resetBridge() {
+            tracingActive = false;
+            isOnPath = false;
+            hasWon = false;
+            bridgeUI.classList.remove('fail-state');
+            bridgeUI.classList.remove('cursor-none');
+            bridgeUI.classList.add('cursor-pointer');
+            cursor.style.display = 'none';
+            document.getElementById('fail-msg').style.display = 'none';
+            document.getElementById('win-msg').style.display = 'none';
+            document.getElementById('reset-bridge-btn').style.display = 'none';
+            document.getElementById('start-node').classList.add('start-active');
+        }
+
+        function beginTracing(e) {
+            e.preventDefault();
+            if (hasWon) return;
+            tracingActive = true;
+            isOnPath = true; 
+            bridgeUI.classList.add('cursor-none');
+            bridgeUI.classList.remove('cursor-pointer');
+            cursor.style.display = 'block';
+            
+            let clientX = e.clientX;
+            let clientY = e.clientY;
+            if(e.touches && e.touches.length > 0) {
+                clientX = e.touches[0].clientX;
+                clientY = e.touches[0].clientY;
+            }
+            moveCursor(clientX, clientY);
+            document.getElementById('start-node').classList.remove('start-active');
+        }
+        
+        document.getElementById('start-node').onclick = beginTracing;
+        document.getElementById('start-node').addEventListener('touchstart', beginTracing);
+
+        function confirmOnPath() {
+            if (!tracingActive) return;
+            isOnPath = true;
+        }
+
+        function confirmOffPath() {
+            if (!tracingActive || hasWon) return;
+            isOnPath = false;
+            triggerFail();
+        }
+
+        function triggerFail() {
+            tracingActive = false;
+            bridgeUI.classList.add('fail-state');
+            document.getElementById('fail-msg').style.display = 'block';
+            document.getElementById('reset-bridge-btn').style.display = 'inline-block';
+            bridgeUI.classList.remove('cursor-none');
+            bridgeUI.classList.add('cursor-pointer');
+        }
+
+        function checkWin() {
+            if (tracingActive && isOnPath) {
+                hasWon = true;
+                tracingActive = false;
+                document.getElementById('win-msg').style.display = 'block';
+                bridgeUI.classList.remove('cursor-none');
+                bridgeUI.classList.add('cursor-pointer');
+            }
+        }
+    </script>
+</body>
+</html>
