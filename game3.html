@@ -8,7 +8,6 @@
     <style>
         /* --- CORE PAGE SETUP --- */
         body { 
-            /* No overrides. Uses style.css background exactly. */
             min-height: 100vh; 
             overflow-y: auto !important; 
             overscroll-behavior-y: none;
@@ -19,9 +18,8 @@
             position: relative; 
             width: 100%; max-width: 1000px; height: 500px; 
             margin: 20px auto;
-            /* Matches the standard glass panel look, but slightly more transparent for the game */
             background: rgba(10, 5, 5, 0.7); 
-            border: 1px solid rgba(197, 160, 89, 0.3); /* Gold border match */
+            border: 1px solid rgba(197, 160, 89, 0.3);
             box-shadow: 0 0 50px rgba(0,0,0,0.8);
             backdrop-filter: blur(8px);
             border-radius: 12px; 
@@ -48,7 +46,7 @@
             justify-content: center; 
         }
         
-        /* --- DIFFICULTY BUTTONS (Centering Fix) --- */
+        /* --- DIFFICULTY BUTTONS --- */
         .diff-btn {
             width: 60px; height: 60px; 
             border-radius: 50%;
@@ -61,11 +59,14 @@
             cursor: pointer;
             transition: 0.3s;
             
-            /* THE "CENTER ON OBJECT" CODE */
-            padding: 0; margin: 0; /* Strip default browser padding */
+            /* RESET GLOBAL STYLES */
+            padding: 0; margin: 0;
+            letter-spacing: 0 !important; /* Fixes the left-skew caused by global button spacing */
+            
+            /* CENTER CONTENT */
             display: flex; 
-            justify-content: center; /* Horizontal Center */
-            align-items: center;     /* Vertical Center */
+            justify-content: center; 
+            align-items: center;
         }
         .diff-btn:hover { background: var(--gold-base); color: #000; box-shadow: 0 0 20px var(--gold-shadow); transform: scale(1.1); }
 
@@ -79,7 +80,7 @@
         /* --- THE BRIDGE (SVG LAYERS) --- */
         svg { width: 100%; height: 100%; cursor: crosshair; display: block; }
         
-        .path-hitbox { fill: none; stroke: transparent; stroke-width: 50px; pointer-events: stroke; }
+        .path-hitbox { fill: none; stroke: transparent; stroke-width: 45px; pointer-events: stroke; }
         
         .path-glow { 
             fill: none; stroke: var(--spirit); stroke-width: 20px; stroke-linecap: round;
@@ -125,7 +126,7 @@
                 margin: 40px auto; 
             }
             .status-msg { font-size: 2.5rem; }
-            .path-hitbox { stroke-width: 60px; } 
+            .path-hitbox { stroke-width: 50px; } 
         }
     </style>
 </head>
@@ -176,12 +177,22 @@
     </div>
 
     <script>
-        // --- PATH LOGIC (Fixed to Start/End at Y=250) ---
+        // --- UPGRADED PATH LOGIC ---
+        // All paths Start at (50, 250) and End at (950, 250)
         const paths = {
-            1: "M 50 250 L 950 250", 
-            2: "M 50 250 Q 500 500 950 250", 
-            3: "M 50 250 C 275 500, 275 0, 500 250 S 725 500, 950 250", 
-            4: "M 50 250 C 200 50, 200 450, 500 250 S 800 50, 950 250" 
+            // Level I: The Serpent (Old "Hard")
+            1: "M 50 250 C 275 500, 275 0, 500 250 S 725 500, 950 250", 
+            
+            // Level II: The Helix (Old "Expert")
+            2: "M 50 250 C 200 50, 200 450, 500 250 S 800 50, 950 250",
+            
+            // Level III: The Tremor (New - Sharp Zig Zags)
+            // Requires stopping momentum and pivoting sharp corners.
+            3: "M 50 250 L 150 50 L 250 450 L 350 100 L 450 400 L 550 50 L 650 450 L 750 100 L 850 400 L 950 250",
+            
+            // Level IV: The Knot (New - Tangled Loops)
+            // Loops back on itself, requiring circular dexterity.
+            4: "M 50 250 C 250 250, 150 50, 350 50 S 450 450, 250 450 S 550 50, 750 50 S 650 450, 850 450 S 950 250, 950 250"
         };
 
         let active = false;
