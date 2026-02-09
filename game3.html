@@ -8,7 +8,7 @@
     <style>
         /* --- CORE PAGE SETUP --- */
         body { 
-            /* REMOVED background: #000 override so it uses style.css bg.webp */
+            /* Uses the background from style.css automatically */
             min-height: 100vh; 
             overflow-y: auto !important; 
             overscroll-behavior-y: none;
@@ -17,8 +17,10 @@
         /* --- BACKGROUND ATMOSPHERE --- */
         .void-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
-            /* Made semi-transparent black to darken the carnival BG but not hide it */
-            background: rgba(5, 5, 10, 0.85); 
+            /* FIX: Removed solid background color so the Carnival BG shows through */
+            background: transparent; 
+            /* Optional: slight vignette to make text pop, but keeps BG visible */
+            background-image: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.6) 100%);
         }
         
         .dust-particle {
@@ -32,7 +34,8 @@
             position: relative; width: 100%; max-width: 1000px; height: 500px; margin: 20px auto;
             border: 1px solid rgba(170, 221, 255, 0.2); 
             box-shadow: 0 0 50px rgba(0,0,0,0.8);
-            background: rgba(10, 10, 15, 0.6); /* More transparent */
+            /* Translucent dark glass so the game pops off the background */
+            background: rgba(10, 10, 15, 0.7); 
             backdrop-filter: blur(8px);
             border-radius: 12px; overflow: hidden;
             display: flex; align-items: center; justify-content: center;
@@ -51,18 +54,28 @@
 
         .difficulty-grid { display: flex; gap: 20px; margin-top: 30px; flex-wrap: wrap; justify-content: center; }
         
-        /* --- DIFFICULTY BUTTONS (Centering Fix 2.0) --- */
+        /* --- DIFFICULTY BUTTONS (Optical Centering Fix) --- */
         .diff-btn {
-            width: 60px; height: 60px; border-radius: 50%;
-            background: transparent; border: 2px solid var(--gold-base); color: var(--gold-base);
-            font-size: 1.4rem; font-family: 'Cinzel', serif; cursor: pointer;
+            width: 60px; height: 60px; 
+            border-radius: 50%;
+            background: transparent; 
+            border: 2px solid var(--gold-base); 
+            color: var(--gold-base);
+            font-size: 1.4rem; 
+            font-family: 'Cinzel', serif; 
+            font-weight: bold;
+            cursor: pointer;
             transition: 0.3s;
-            padding: 0; margin: 0;
             
-            /* Grid is more reliable than flex for perfect centering */
-            display: grid; 
-            place-items: center;
-            line-height: 0; /* Removes font vertical offset quirks */
+            /* The Layout Fix */
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            
+            /* THE OPTICAL NUDGE: Pushes the text down to account for font metrics */
+            padding-top: 4px; 
+            padding-left: 0; padding-right: 0; padding-bottom: 0;
+            box-sizing: border-box; 
         }
         .diff-btn:hover { background: var(--gold-base); color: #000; box-shadow: 0 0 20px var(--gold-shadow); transform: scale(1.1); }
 
@@ -76,7 +89,6 @@
         /* --- THE BRIDGE (SVG LAYERS) --- */
         svg { width: 100%; height: 100%; cursor: crosshair; display: block; }
         
-        /* Hitbox is invisible but wide */
         .path-hitbox { fill: none; stroke: transparent; stroke-width: 50px; pointer-events: stroke; }
         
         .path-glow { 
@@ -111,7 +123,6 @@
         
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
 
-        /* --- MOBILE TWEAKS --- */
         @media (max-width: 768px) {
             .screen {
                 height: auto !important; 
@@ -124,7 +135,7 @@
                 margin: 40px auto; 
             }
             .status-msg { font-size: 2.5rem; }
-            .path-hitbox { stroke-width: 60px; } /* Wider safety margin for fingers */
+            .path-hitbox { stroke-width: 60px; } 
         }
     </style>
 </head>
@@ -166,7 +177,6 @@
                 
                 <path id="path-visual-glow" class="path-glow" d="" />
                 <path id="path-visual-core" class="path-core" d="" />
-                
                 <path id="path-hitbox" class="path-hitbox safe-zone" d="" />
                 
                 <circle id="start-node" cx="50" cy="250" class="node start-node safe-zone" />
@@ -178,7 +188,7 @@
     </div>
 
     <script>
-        // --- 1. VISUALS ---
+        // --- VISUALS ---
         const particleContainer = document.getElementById('particles');
         for(let i=0; i<30; i++){
             let p = document.createElement('div');
@@ -192,16 +202,11 @@
             particleContainer.appendChild(p);
         }
 
-        // --- 2. LOGIC ---
-        // CRITICAL UPDATE: All paths now explicitly Start at (50, 250) and End at (950, 250)
+        // --- PATH LOGIC (Fixed to Start/End at Y=250) ---
         const paths = {
-            // I: Straight Line
             1: "M 50 250 L 950 250", 
-            // II: The Valley (Dip down and up)
             2: "M 50 250 Q 500 500 950 250", 
-            // III: The Sine Wave (Snake)
             3: "M 50 250 C 275 500, 275 0, 500 250 S 725 500, 950 250", 
-            // IV: The Double Loop (Tight curves)
             4: "M 50 250 C 200 50, 200 450, 500 250 S 800 50, 950 250" 
         };
 
@@ -216,8 +221,6 @@
             document.getElementById('path-visual-glow').setAttribute('d', d);
             document.getElementById('path-visual-core').setAttribute('d', d);
             document.getElementById('path-hitbox').setAttribute('d', d);
-            
-            // Nodes are static now, no need to move them.
             document.getElementById('ui-difficulty').classList.add('hidden');
         }
 
