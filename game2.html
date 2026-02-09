@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nine Dredges</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .grid-container {
+            display: grid; grid-template-columns: repeat(3, 180px); gap: 20px;
+            justify-content: center; margin: 20px auto;
+        }
+        .dredge-cell {
+            width: 100%; aspect-ratio: 1/1; position: relative; cursor: crosshair;
+            overflow: hidden; border-radius: 50%; 
+        }
+        .portal-img {
+            width: 100%; height: 100%; position: absolute; top: 0; left: 0; 
+            z-index: 5; pointer-events: none; filter: drop-shadow(0 10px 10px rgba(0,0,0,0.8));
+        }
+        .dretch-img {
+            width: 70%; height: 70%; position: absolute; top: 15%; left: 15%; z-index: 6; 
+            border-radius: 50%; object-fit: cover; 
+            transition: transform 0.1s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            transform: scale(0); filter: drop-shadow(0 0 10px rgba(0,0,0,0.8));
+        }
+        .dretch-active { transform: scale(1); }
+        .poison-overlay {
+            position: absolute; top: -10%; left: -10%; width: 120%; height: 120%;
+            background: radial-gradient(circle, var(--poison-gas) 20%, transparent 70%);
+            opacity: 0; z-index: 10; pointer-events: none;
+            mix-blend-mode: hard-light; filter: blur(8px);
+        }
+        @media (max-width: 768px) {
+            .grid-container { grid-template-columns: repeat(3, 1fr); gap: 10px; width: 100%; max-width: 400px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="screen">
+        <h2>Whack-a-Dredge</h2>
+        <p>Roll a melee attack. On hit, tap the Dredger.</p>
+        <div class="grid-container" id="dredge-grid"></div>
+        <button class="back-btn" onclick="location.href='index.html'">Return to Hub</button>
+    </div>
+
+    <script>
+        let currentDredgeIdx = -1;
+
+        function initDredges() {
+            const grid = document.getElementById('dredge-grid');
+            grid.innerHTML = '';
+            for(let i=0; i<9; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'dredge-cell';
+                cell.id = `cell-${i}`;
+                
+                // Overlay
+                const poison = document.createElement('div');
+                poison.className = 'poison-overlay';
+                cell.appendChild(poison);
+
+                // Monster
+                const monster = document.createElement('img');
+                monster.src = 'assets/dretch.webp';
+                monster.className = 'dretch-img';
+                
+                // Events
+                monster.addEventListener('touchstart', (e) => { e.preventDefault(); whackDredge(e); });
+                monster.onclick = (e) => whackDredge(e);
+                
+                cell.appendChild(monster);
+
+                // Portal
+                const portal = document.createElement('img');
+                portal.src = 'assets/portal.webp';
+                portal.className = 'portal-img';
+                cell.appendChild(portal);
+
+                grid.appendChild(cell);
+            }
+            setTimeout(spawnDredge, 500);
+        }
+
+        function spawnDredge() {
+            document.querySelectorAll('.dretch-active').forEach(img => img.classList.remove('dretch-active'));
+            let newIdx;
+            do { newIdx = Math.floor(Math.random() * 9); } while(newIdx === currentDredgeIdx);
+            currentDredgeIdx = newIdx;
+            const cell = document.getElementById(`cell-${currentDredgeIdx}`);
+            if(cell) cell.querySelector('.dretch-img').classList.add('dretch-active');
+        }
+
+        function whackDredge(e) {
+            e.stopPropagation();
+            document.querySelectorAll('.dretch-active').forEach(img => img.classList.remove('dretch-active'));
+            setTimeout(spawnDredge, 500);
+        }
+
+        window.onload = initDredges;
+    </script>
+</body>
+</html>
