@@ -6,111 +6,147 @@
     <title>The Spectral Bridge</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        .bridge-container {
-            position: relative; width: 100%; max-width: 900px; aspect-ratio: 2/1; margin: 0 auto; 
-            background-color: #020202;
-            background-image: 
-                radial-gradient(circle at 50% 50%, #1a1a2e 0%, transparent 60%),
-                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-            background-size: 100% 100%, 40px 40px, 40px 40px;
-            border: 1px solid #333; box-shadow: inset 0 0 100px #000;
-            overflow: hidden; border-radius: 4px; touch-action: none; 
-        }
+        /* --- MODERN UI & ATMOSPHERE --- */
+        body { overflow: hidden; background: #000; }
 
-        .cursor-none { cursor: none; }
-        .cursor-pointer { cursor: pointer; }
-
-        /* SVG Styles */
-        #bridge-hitbox { fill: none; stroke: transparent; stroke-width: 25px; pointer-events: stroke; }
-        #bridge-glow {
-            fill: none; stroke: var(--spirit); stroke-width: 40px;
-            filter: url(#ectoplasm); opacity: 0.3; stroke-linecap: round; transition: stroke 0.3s;
+        .void-bg {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: -1;
+            background: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #000 90%);
         }
-        #bridge-stream {
-            fill: none; stroke: #fff; stroke-width: 15px; stroke-dasharray: 20, 40; 
-            filter: blur(4px); opacity: 0.6; animation: flowStream 2s linear infinite;
-        }
-        #bridge-core-vis { fill: none; stroke: #fff; stroke-width: 2px; opacity: 0.8; filter: drop-shadow(0 0 5px #fff); }
         
-        @keyframes flowStream { to { stroke-dashoffset: -60; } }
+        .dust-particle {
+            position: absolute; background: rgba(255,255,255,0.3); border-radius: 50%;
+            animation: floatParticle 20s infinite linear; pointer-events: none;
+        }
+        @keyframes floatParticle { from { transform: translateY(0); opacity: 0; } 50% { opacity: 0.5; } to { transform: translateY(-100vh); opacity: 0; } }
 
-        #spirit-cursor { 
-            width: 30px; height: 30px; background: #fff; border-radius: 50%; 
-            position: absolute; pointer-events: none; transform: translate(-50%, -50%); 
-            z-index: 20; display: none; mix-blend-mode: screen;
-            box-shadow: 0 0 10px #fff, 0 0 20px var(--spirit), 0 0 40px var(--spirit);
-            filter: url(#cursor-flicker);
+        .game-wrapper {
+            position: relative; width: 100%; max-width: 1000px; height: 500px; margin: 20px auto;
+            border: 1px solid rgba(170, 221, 255, 0.2); 
+            box-shadow: 0 0 50px rgba(0,0,0,0.8);
+            background: rgba(10, 10, 15, 0.85);
+            backdrop-filter: blur(10px);
+            border-radius: 12px; overflow: hidden;
+            display: flex; align-items: center; justify-content: center;
         }
 
-        /* Logic States */
-        .fail-state { animation: glitch 0.2s cubic-bezier(.25, .46, .45, .94) both infinite; box-shadow: inset 0 0 150px var(--blood) !important; }
-        .fail-state #bridge-glow { stroke: var(--blood); opacity: 0.8; }
-        .fail-state #bridge-stream { stroke: var(--blood-bright); }
+        /* --- UI OVERLAYS --- */
+        .overlay-panel {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 50;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            transition: opacity 0.4s;
+        }
+        .hidden { opacity: 0; pointer-events: none; }
+
+        .difficulty-grid { display: flex; gap: 20px; margin-top: 30px; }
+        .diff-btn {
+            width: 60px; height: 60px; border-radius: 50%;
+            background: transparent; border: 2px solid var(--gold-base); color: var(--gold-base);
+            font-size: 1.5rem; font-family: 'Cinzel'; cursor: pointer;
+            transition: 0.3s;
+        }
+        .diff-btn:hover { background: var(--gold-base); color: #000; box-shadow: 0 0 20px var(--gold-shadow); transform: scale(1.1); }
+
+        .status-msg {
+            font-family: 'Cinzel'; font-size: 4rem; letter-spacing: 5px; text-transform: uppercase;
+            text-shadow: 0 0 30px currentColor; margin-bottom: 20px;
+            animation: textZoom 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes textZoom { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+
+        /* --- THE BRIDGE (SVG) --- */
+        svg { width: 100%; height: 100%; cursor: crosshair; }
         
-        @keyframes glitch { 
-            0% { transform: translate(0); } 20% { transform: translate(-2px, 2px); } 
-            40% { transform: translate(-2px, -2px); } 60% { transform: translate(2px, 2px); } 
-            80% { transform: translate(2px, -2px); } 100% { transform: translate(0); } 
+        /* The Invisible Hitbox (Thicker than visual) */
+        .path-hitbox { fill: none; stroke: transparent; stroke-width: 45px; pointer-events: stroke; }
+        
+        /* Visual Elements */
+        .path-glow { 
+            fill: none; stroke: var(--spirit); stroke-width: 20px; stroke-linecap: round;
+            filter: blur(8px); opacity: 0.4; transition: d 0.5s ease-in-out; 
+        }
+        .path-core { 
+            fill: none; stroke: #e0f7fa; stroke-width: 4px; stroke-dasharray: 10 20; 
+            animation: flowEnergy 1s linear infinite; opacity: 0.9;
+            filter: drop-shadow(0 0 5px var(--spirit)); transition: d 0.5s ease-in-out;
+        }
+        @keyframes flowEnergy { to { stroke-dashoffset: -30; } }
+
+        /* Nodes */
+        .node { r: 25; transition: all 0.3s; cursor: pointer; }
+        .start-node { fill: #39ff14; filter: drop-shadow(0 0 10px #39ff14); }
+        .end-node { fill: var(--spirit); filter: drop-shadow(0 0 10px var(--spirit)); opacity: 0.5; }
+        .node:hover { r: 30; }
+
+        /* Cursor / Soul */
+        #soul-cursor {
+            position: absolute; width: 24px; height: 24px; 
+            background: #fff; border-radius: 50%;
+            transform: translate(-50%, -50%); pointer-events: none; z-index: 100;
+            box-shadow: 0 0 10px #fff, 0 0 20px var(--spirit);
+            display: none; mix-blend-mode: screen;
         }
 
-        .node { fill: var(--gold-base); cursor: pointer; transition: fill 0.3s, r 0.3s; }
-        .node:hover { fill: #fff; r: 18px; }
-        .start-active { fill: #39ff14; filter: drop-shadow(0 0 10px #39ff14); animation: pulse 1s infinite; }
-        .end-zone { fill: var(--spirit); opacity: 0.5; }
+        /* Logic Classes */
+        .game-active { cursor: none !important; }
+        .game-active svg { cursor: none !important; }
         
-        @keyframes pulse { 0% { r: 15px; opacity: 1; } 50% { r: 20px; opacity: 0.6; } 100% { r: 15px; opacity: 1; } }
+        .fail-anim .path-core { stroke: var(--blood-bright); animation: shake 0.5s; }
+        .fail-anim .path-glow { stroke: var(--blood); opacity: 0.8; }
+        
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
 
-        #bridge-overlay-ui {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            z-index: 30; text-align: center; pointer-events: none; width: 100%;
-        }
-        .overlay-msg { font-family: 'Cinzel'; font-size: 3rem; text-shadow: 0 0 20px #000; display: none; }
-        
         @media (max-width: 768px) {
-            .bridge-container { width: 100%; height: auto; }
-            .overlay-msg { font-size: 2rem; }
+            .game-wrapper { height: 60vh; border-radius: 0; border: none; }
+            .status-msg { font-size: 2.5rem; }
+            .path-hitbox { stroke-width: 55px; } /* More forgiving on mobile */
         }
     </style>
 </head>
 <body>
+    <div class="void-bg" id="particles"></div>
+
     <div class="screen">
         <h2>The Spectral Bridge</h2>
-        <p>Drag the soul from <span style="color:#39ff14">Green</span> to <span style="color:var(--spirit)">Blue</span>. Do not touch the void.</p>
+        <p>Guide the soul across the void. Do not falter.</p>
         
-        <div class="bridge-container cursor-pointer" id="bridge-ui">
-            <div id="spirit-cursor"></div>
-            
-            <div id="bridge-overlay-ui">
-                <div id="fail-msg" class="overlay-msg" style="color: var(--blood-bright)">FALLEN</div>
-                <div id="win-msg" class="overlay-msg" style="color: var(--gold-highlight)">ASCENDED</div>
-                <button id="reset-bridge-btn" onclick="resetBridge()" style="display:none; pointer-events: auto;">Resurrect Soul</button>
+        <div class="game-wrapper" id="game-stage">
+            <div id="soul-cursor"></div>
+
+            <div id="ui-difficulty" class="overlay-panel">
+                <h3 style="color: var(--gold-highlight); font-family: 'Cinzel'; margin: 0;">Attunement</h3>
+                <p style="margin: 10px 0 30px;">Roll 1d4 for Bridge Stability</p>
+                <div class="difficulty-grid">
+                    <button class="diff-btn" onclick="setDifficulty(1)">I</button>
+                    <button class="diff-btn" onclick="setDifficulty(2)">II</button>
+                    <button class="diff-btn" onclick="setDifficulty(3)">III</button>
+                    <button class="diff-btn" onclick="setDifficulty(4)">IV</button>
+                </div>
             </div>
-            
-            <svg width="100%" height="100%" viewBox="0 0 900 450" preserveAspectRatio="xMidYMid meet">
+
+            <div id="ui-fail" class="overlay-panel hidden">
+                <div class="status-msg" style="color: var(--blood-bright)">FALLEN</div>
+                <button onclick="resetGame()">Resurrect</button>
+            </div>
+
+            <div id="ui-win" class="overlay-panel hidden">
+                <div class="status-msg" style="color: var(--gold-highlight)">ASCENDED</div>
+                <button onclick="showDifficultyMenu()">Cross Again</button>
+            </div>
+
+            <svg viewBox="0 0 1000 500" preserveAspectRatio="none">
                 <defs>
-                    <filter id="ectoplasm">
-                        <feTurbulence type="fractalNoise" baseFrequency="0.02" numOctaves="4" result="noise" />
-                        <feDisplacementMap in="SourceGraphic" in2="noise" scale="15" />
-                        <feGaussianBlur stdDeviation="3" />
-                    </filter>
-                    <filter id="cursor-flicker">
-                        <feTurbulence type="fractalNoise" baseFrequency="0.1" numOctaves="2" />
-                        <feDisplacementMap in="SourceGraphic" scale="3" />
-                    </filter>
+                    <filter id="glow-blur"><feGaussianBlur stdDeviation="4" result="coloredBlur"/></filter>
                 </defs>
 
-                <path id="bridge-glow" d="M 50 400 C 80 300, 150 150, 200 150 S 250 350, 300 400 S 400 300, 500 200 S 600 50, 650 50 S 800 200, 850 225" />
-                <path id="bridge-stream" d="M 50 400 C 80 300, 150 150, 200 150 S 250 350, 300 400 S 400 300, 500 200 S 600 50, 650 50 S 800 200, 850 225" />
-                <path id="bridge-core-vis" d="M 50 400 C 80 300, 150 150, 200 150 S 250 350, 300 400 S 400 300, 500 200 S 600 50, 650 50 S 800 200, 850 225" />
+                <path id="path-visual-glow" class="path-glow" d="" />
+                <path id="path-visual-core" class="path-core" d="" />
                 
-                <path id="bridge-hitbox" 
-                      d="M 50 400 C 80 300, 150 150, 200 150 S 250 350, 300 400 S 400 300, 500 200 S 600 50, 650 50 S 800 200, 850 225"
-                      onmouseenter="confirmOnPath()"
-                      onmouseleave="confirmOffPath()" />
-
-                <circle cx="50" cy="400" r="15" class="node start-active" id="start-node" />
-                <circle cx="850" cy="225" r="20" class="node end-zone" id="end-node" onmouseenter="checkWin()" />
+                <path id="path-hitbox" class="path-hitbox safe-zone" d="" />
+                
+                <circle id="start-node" cx="50" cy="250" class="node start-node safe-zone" />
+                <circle id="end-node" cx="950" cy="250" class="node end-node safe-zone" />
             </svg>
         </div>
 
@@ -118,118 +154,154 @@
     </div>
 
     <script>
-        let tracingActive = false;
-        let isOnPath = false;
-        let hasWon = false;
-
-        const bridgeUI = document.getElementById('bridge-ui');
-        const cursor = document.getElementById('spirit-cursor');
-
-        // MOUSE & TOUCH LOGIC
-        if(bridgeUI) {
-            bridgeUI.addEventListener('mousemove', (e) => {
-                if (!tracingActive) return;
-                moveCursor(e.clientX, e.clientY);
-            });
-            
-            bridgeUI.addEventListener('touchmove', (e) => {
-                if(!tracingActive) return;
-                e.preventDefault(); 
-                const touch = e.touches[0];
-                moveCursor(touch.clientX, touch.clientY);
-                checkTouchCollision(touch.clientX, touch.clientY);
-            }, { passive: false });
+        // --- PARTICLE BACKGROUND ---
+        const particleContainer = document.getElementById('particles');
+        for(let i=0; i<30; i++){
+            let p = document.createElement('div');
+            p.className = 'dust-particle';
+            p.style.left = Math.random() * 100 + '%';
+            p.style.top = Math.random() * 100 + '%';
+            p.style.width = Math.random() * 4 + 'px';
+            p.style.height = p.style.width;
+            p.style.animationDelay = Math.random() * 5 + 's';
+            p.style.opacity = Math.random() * 0.5;
+            particleContainer.appendChild(p);
         }
 
-        function moveCursor(x, y) {
-            const rect = bridgeUI.getBoundingClientRect();
-            const relX = x - rect.left;
-            const relY = y - rect.top;
-            cursor.style.left = relX + 'px';
-            cursor.style.top = relY + 'px';
-        }
+        // --- GAME LOGIC ---
+        const paths = {
+            1: "M 50 250 L 950 250", // Straight
+            2: "M 50 400 Q 500 50 950 400", // Simple Arch
+            3: "M 50 400 C 200 400, 200 100, 500 100 S 800 400, 950 250", // The Classic Twist
+            4: "M 50 250 C 250 50, 250 450, 500 250 S 750 50, 750 450, 950 250" // Double Helix / ZigZag
+        };
 
-        function checkTouchCollision(x, y) {
-            if(hasWon) return;
-            const el = document.elementFromPoint(x, y);
-            if(el && el.id === 'end-node') {
-                checkWin();
-                return;
-            }
-            if(el && el.id === 'bridge-hitbox') {
-                isOnPath = true;
-            } else if (el && el.id === 'spirit-cursor') {
-                 // ignore self
-            } else {
-                if(tracingActive) confirmOffPath();
-            }
-        }
-
-        function resetBridge() {
-            tracingActive = false;
-            isOnPath = false;
-            hasWon = false;
-            bridgeUI.classList.remove('fail-state');
-            bridgeUI.classList.remove('cursor-none');
-            bridgeUI.classList.add('cursor-pointer');
-            cursor.style.display = 'none';
-            document.getElementById('fail-msg').style.display = 'none';
-            document.getElementById('win-msg').style.display = 'none';
-            document.getElementById('reset-bridge-btn').style.display = 'none';
-            document.getElementById('start-node').classList.add('start-active');
-        }
-
-        function beginTracing(e) {
-            e.preventDefault();
-            if (hasWon) return;
-            tracingActive = true;
-            isOnPath = true; 
-            bridgeUI.classList.add('cursor-none');
-            bridgeUI.classList.remove('cursor-pointer');
-            cursor.style.display = 'block';
-            
-            let clientX = e.clientX;
-            let clientY = e.clientY;
-            if(e.touches && e.touches.length > 0) {
-                clientX = e.touches[0].clientX;
-                clientY = e.touches[0].clientY;
-            }
-            moveCursor(clientX, clientY);
-            document.getElementById('start-node').classList.remove('start-active');
-        }
+        let active = false;
+        let difficulty = 3;
+        const stage = document.getElementById('game-stage');
+        const cursor = document.getElementById('soul-cursor');
         
-        document.getElementById('start-node').onclick = beginTracing;
-        document.getElementById('start-node').addEventListener('touchstart', beginTracing);
+        function setDifficulty(lvl) {
+            difficulty = lvl;
+            const d = paths[lvl];
+            
+            // Update all path layers
+            document.getElementById('path-visual-glow').setAttribute('d', d);
+            document.getElementById('path-visual-core').setAttribute('d', d);
+            document.getElementById('path-hitbox').setAttribute('d', d);
+            
+            // Move nodes based on path endpoints (Rough logic for 1/4 which end at 250y vs others)
+            // Actually, my paths above end at different Ys. Let's snap the end node.
+            // SVG path parsing is hard, so I'll manually set End Node Y for now.
+            let endY = 250;
+            if (lvl === 2) endY = 400; // Arch ends low
+            if (lvl === 3) endY = 250; 
+            
+            document.getElementById('end-node').setAttribute('cy', endY);
+            // Re-draw the straight line to match end node if needed
+            if(lvl === 1) document.getElementById('path-visual-glow').setAttribute('d', `M 50 250 L 950 ${endY}`);
 
-        function confirmOnPath() {
-            if (!tracingActive) return;
-            isOnPath = true;
+            document.getElementById('ui-difficulty').classList.add('hidden');
         }
 
-        function confirmOffPath() {
-            if (!tracingActive || hasWon) return;
-            isOnPath = false;
-            triggerFail();
+        function showDifficultyMenu() {
+            resetGame();
+            document.getElementById('ui-difficulty').classList.remove('hidden');
         }
 
-        function triggerFail() {
-            tracingActive = false;
-            bridgeUI.classList.add('fail-state');
-            document.getElementById('fail-msg').style.display = 'block';
-            document.getElementById('reset-bridge-btn').style.display = 'inline-block';
-            bridgeUI.classList.remove('cursor-none');
-            bridgeUI.classList.add('cursor-pointer');
+        function resetGame() {
+            active = false;
+            stage.classList.remove('game-active', 'fail-anim');
+            cursor.style.display = 'none';
+            document.getElementById('ui-fail').classList.add('hidden');
+            document.getElementById('ui-win').classList.add('hidden');
+            document.getElementById('start-node').style.opacity = '1';
         }
 
-        function checkWin() {
-            if (tracingActive && isOnPath) {
-                hasWon = true;
-                tracingActive = false;
-                document.getElementById('win-msg').style.display = 'block';
-                bridgeUI.classList.remove('cursor-none');
-                bridgeUI.classList.add('cursor-pointer');
+        // --- INPUT HANDLING ---
+        const startNode = document.getElementById('start-node');
+        
+        startNode.addEventListener('mousedown', beginTrace);
+        startNode.addEventListener('touchstart', beginTrace, {passive: false});
+
+        function beginTrace(e) {
+            e.preventDefault();
+            active = true;
+            stage.classList.add('game-active');
+            cursor.style.display = 'block';
+            moveCursor(e);
+            document.getElementById('start-node').style.opacity = '0.5';
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            if(!active) return;
+            moveCursor(e);
+            checkCollision(e.clientX, e.clientY);
+        });
+        
+        window.addEventListener('touchmove', (e) => {
+            if(!active) return;
+            e.preventDefault(); 
+            const touch = e.touches[0];
+            moveCursor(touch);
+            checkCollision(touch.clientX, touch.clientY);
+        }, {passive: false});
+
+        // Release to fail (unless won)
+        window.addEventListener('mouseup', () => { if(active) fail(); });
+        window.addEventListener('touchend', () => { if(active) fail(); });
+
+        function moveCursor(e) {
+            const rect = stage.getBoundingClientRect();
+            let x = (e.clientX || e.pageX) - rect.left;
+            let y = (e.clientY || e.pageY) - rect.top;
+            cursor.style.left = x + 'px';
+            cursor.style.top = y + 'px';
+        }
+
+        function checkCollision(x, y) {
+            // "Raycast" - what is under the finger/mouse?
+            // We use elementsFromPoint to pierce through the cursor itself
+            const elements = document.elementsFromPoint(x, y);
+            
+            let safe = false;
+            let won = false;
+
+            for (let el of elements) {
+                // If we hit the End Node
+                if (el.id === 'end-node') {
+                    won = true;
+                    break;
+                }
+                // If we are on the path OR the start node
+                if (el.classList.contains('safe-zone')) {
+                    safe = true;
+                }
+            }
+
+            if (won) {
+                win();
+            } else if (!safe) {
+                fail();
             }
         }
+
+        function fail() {
+            active = false;
+            stage.classList.remove('game-active');
+            stage.classList.add('fail-anim');
+            document.getElementById('ui-fail').classList.remove('hidden');
+        }
+
+        function win() {
+            active = false;
+            stage.classList.remove('game-active');
+            document.getElementById('ui-win').classList.remove('hidden');
+        }
+
+        // Initial Setup
+        setDifficulty(3); // Default view
+        document.getElementById('ui-difficulty').classList.remove('hidden'); // Show menu on load
     </script>
 </body>
 </html>
