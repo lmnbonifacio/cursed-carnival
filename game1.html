@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Wheel of Horrors</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .wheel-stage { position: relative; width: 500px; height: 500px; margin: 0 auto 30px auto; max-width: 100%; }
+        #wheel-img { width: 100%; height: 100%; transition: transform 5s cubic-bezier(0.2, 0.8, 0.2, 1); filter: drop-shadow(0 0 30px rgba(0,0,0,0.9)); }
+        #pointer-img { position: absolute; top: -5%; left: 50%; transform: translateX(-50%); width: 15%; z-index: 10; filter: drop-shadow(0 5px 10px black); }
+        .wheel-controls { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+        .wheel-btn { width: 50px; height: 50px; padding: 0; border-radius: 50%; line-height: 50px; }
+        
+        /* Modal Logic */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 100;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+            backdrop-filter: blur(5px);
+            padding: 20px;
+        }
+        .modal-active { opacity: 1; visibility: visible; pointer-events: auto; }
+        .modal-content {
+            background: #111; border: 2px solid var(--gold-base);
+            padding: 40px; max-width: 600px; width: 100%; text-align: center;
+            box-shadow: 0 0 50px rgba(197, 160, 89, 0.2);
+            transform: scale(0.8); transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .modal-active .modal-content { transform: scale(1); }
+        .modal-title { font-family: 'Cinzel'; font-size: 2.5rem; color: var(--gold-highlight); margin-bottom: 20px; }
+        .modal-desc { font-family: 'Playfair Display'; font-size: 1.2rem; line-height: 1.6; color: #ccc; margin-bottom: 30px; }
+        .close-modal { background: transparent; border: 1px solid #444; color: #888; padding: 10px 30px; text-transform: uppercase; letter-spacing: 2px; }
+        .close-modal:hover { border-color: #fff; color: #fff; }
+
+        @media (max-width: 768px) {
+            .wheel-stage { width: 85vw; height: 85vw; }
+            .wheel-controls { gap: 4px; }
+            .wheel-btn { width: 40px; height: 40px; line-height: 40px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="screen">
+        <h2>Wheel of Horrors</h2>
+        <p>Cast a physical die (1d8) and let the wheel decide your fate.</p>
+        
+        <div class="wheel-stage">
+            <img src="assets/pointer.webp" id="pointer-img" alt="Pointer">
+            <img src="assets/wheel.webp" id="wheel-img" alt="Wheel">
+        </div>
+
+        <div class="wheel-controls">
+            <button class="wheel-btn" onclick="spinWheel(1)">1</button>
+            <button class="wheel-btn" onclick="spinWheel(2)">2</button>
+            <button class="wheel-btn" onclick="spinWheel(3)">3</button>
+            <button class="wheel-btn" onclick="spinWheel(4)">4</button>
+            <button class="wheel-btn" onclick="spinWheel(5)">5</button>
+            <button class="wheel-btn" onclick="spinWheel(6)">6</button>
+            <button class="wheel-btn" onclick="spinWheel(7)">7</button>
+            <button class="wheel-btn" onclick="spinWheel(8)">8</button>
+        </div>
+
+        <button class="back-btn" onclick="location.href='index.html'">Return to Hub</button>
+    </div>
+
+    <div id="horror-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div id="m-title" class="modal-title">TITLE</div>
+            <div id="m-desc" class="modal-desc">Description goes here.</div>
+            <button class="close-modal" onclick="closeModal()">Accept Fate</button>
+        </div>
+    </div>
+
+    <script>
+        const horrorOutcomes = [
+            { angle: 202.5, title: "The Skull", desc: "A flurry of poison darts erupts from the walls. <br><br><strong>DEX Save DC 15</strong> or take <strong>4d6 Poison</strong> damage." },
+            { angle: 22.5,  title: "The Moon",  desc: "Magical darkness fills the room (1 Min). Darkvision does not penetrate." },
+            { angle: 247.5, title: "Diamond",   desc: "A high-pitched ringing shatters your concentration. <br><br><strong>INT Save DC 14</strong> or take <strong>3d8 Psychic</strong> damage." },
+            { angle: 292.5, title: "Horseshoe", desc: "Gravity Well: The floor becomes difficult terrain. All movement speeds are halved." },
+            { angle: 67.5,  title: "The Star",  desc: "Mirror Image: A duplicate of the boss appears. Attacks against it have a 50% chance to miss." },
+            { angle: 157.5, title: "Clover",    desc: "Silence: A sphere of absolute silence centers on the party." },
+            { angle: 337.5, title: "The Sun",   desc: "Healing spells cast within the room are maximized." },
+            { angle: 112.5, title: "The Heart", desc: "<span style='color:var(--gold-highlight)'>A moment of respite.</span><br>The party regains <strong>2d8 + 4 HP</strong>." }
+        ];
+
+        let currentDeg = 0;
+        function spinWheel(val) {
+            const wheel = document.getElementById('wheel-img');
+            const data = horrorOutcomes[val - 1];
+            if(!data) return;
+
+            const baseRot = 1080;
+            const targetRot = data.angle;
+            const jitter = Math.floor(Math.random() * 20) - 10;
+            currentDeg = currentDeg + baseRot + (360 - (currentDeg % 360)) + targetRot + jitter;
+            
+            wheel.style.transform = `rotate(-${currentDeg}deg)`; 
+            
+            setTimeout(() => { showModal(val); }, 5000); 
+        }
+
+        function showModal(val) {
+            const data = horrorOutcomes[val - 1];
+            if(!data) return;
+            document.getElementById('m-title').innerHTML = data.title;
+            document.getElementById('m-desc').innerHTML = data.desc;
+            document.getElementById('horror-modal').classList.add('modal-active');
+        }
+
+        function closeModal() {
+            document.getElementById('horror-modal').classList.remove('modal-active');
+        }
+    </script>
+</body>
+</html>
