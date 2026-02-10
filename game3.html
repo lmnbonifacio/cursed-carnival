@@ -6,11 +6,14 @@
     <title>The Spectral Bridge</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* --- CORE PAGE SETUP --- */
+        /* --- CORE PAGE SETUP (VOID THEME) --- */
         body { 
             min-height: 100vh; 
             overflow-y: auto !important; 
             overscroll-behavior-y: none;
+            /* VOID BACKGROUND: Overrides the carnival BG for this specific page */
+            background: radial-gradient(circle at center, #1a1a2e 0%, #000000 80%);
+            color: #e0e0e0;
         }
 
         /* --- GAME CONTAINER --- */
@@ -18,20 +21,22 @@
             position: relative; 
             width: 100%; max-width: 1000px; height: 500px; 
             margin: 20px auto;
-            background: rgba(10, 5, 5, 0.7); 
+            /* Darker glass for the void feel */
+            background: rgba(0, 0, 0, 0.6); 
             border: 1px solid rgba(197, 160, 89, 0.3);
-            box-shadow: 0 0 50px rgba(0,0,0,0.8);
-            backdrop-filter: blur(8px);
+            box-shadow: 0 0 80px rgba(0,0,0,1);
+            backdrop-filter: blur(5px);
             border-radius: 12px; 
             overflow: hidden;
             display: flex; align-items: center; justify-content: center;
             touch-action: none; 
+            cursor: default; /* Default cursor before game starts */
         }
 
         /* --- UI OVERLAYS --- */
         .overlay-panel {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.85); z-index: 50;
+            background: rgba(0,0,0,0.9); z-index: 50;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             transition: opacity 0.4s;
             padding: 20px; text-align: center;
@@ -74,7 +79,7 @@
         @keyframes textZoom { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
         /* --- THE BRIDGE (SVG LAYERS) --- */
-        svg { width: 100%; height: 100%; cursor: crosshair; display: block; }
+        svg { width: 100%; height: 100%; display: block; }
         
         .path-hitbox { fill: none; stroke: transparent; stroke-width: 45px; pointer-events: stroke; }
         
@@ -83,33 +88,40 @@
             filter: blur(8px); opacity: 0.5; transition: d 0.5s ease-in-out; 
         }
         
-        /* Updated Core to use Texture Pattern */
         .path-core { 
             fill: none; 
-            stroke-width: 25px; /* Wider to show texture */
+            stroke-width: 25px; 
             stroke-linecap: round;
             opacity: 1;
             filter: drop-shadow(0 0 5px var(--spirit)); 
             transition: d 0.5s ease-in-out;
         }
 
-        /* Updated Nodes to be Images */
-        .node { transition: all 0.3s; cursor: pointer; }
+        /* Updated Nodes (Removed Hover Transform to fix nudging bug) */
+        .node { transition: opacity 0.3s; cursor: pointer; }
         .start-node { filter: drop-shadow(0 0 10px #39ff14); }
         .end-node { filter: drop-shadow(0 0 10px var(--spirit)); opacity: 0.8; }
-        .node:hover { transform: scale(1.1); transform-origin: center; }
+        /* Removed .node:hover transform to prevent layout shifting */
 
         /* --- CUSTOM CURSOR (SOUL SPRITE) --- */
         #soul-cursor {
-            position: absolute; width: 50px; height: 50px; 
-            /* Load Sprite */
-            background: url('assets/sprite-soul.png') no-repeat center center / contain;
-            transform: translate(-50%, -50%); pointer-events: none; z-index: 100;
+            position: absolute; width: 64px; height: 64px; 
+            /* Fallback color if image fails */
+            background-color: transparent; 
+            /* Main Sprite */
+            background-image: url('assets/sprite-soul.png');
+            background-repeat: no-repeat;
+            background-position: center center;
+            background-size: contain;
+            
+            transform: translate(-50%, -50%); 
+            pointer-events: none; /* Critical: Mouse clicks pass through to SVG */
+            z-index: 100;
             display: none; 
-            /* Sprite Glow Effect */
-            filter: drop-shadow(0 0 10px var(--spirit));
+            filter: drop-shadow(0 0 15px var(--spirit));
         }
 
+        /* Hide system cursor when game is active */
         .game-active { cursor: none !important; }
         .game-active svg { cursor: none !important; }
         
@@ -168,7 +180,6 @@
                     <pattern id="bridgePattern" patternUnits="userSpaceOnUse" width="100" height="100">
                         <image href="assets/texture-bridge.webp" x="0" y="0" width="100" height="100" />
                     </pattern>
-                    
                     <filter id="glow-blur"><feGaussianBlur stdDeviation="4" result="coloredBlur"/></filter>
                 </defs>
                 
@@ -179,7 +190,6 @@
                 <path id="path-hitbox" class="path-hitbox safe-zone" d="" />
                 
                 <image id="start-node" href="assets/icon-start.webp" x="20" y="220" width="60" height="60" class="node start-node safe-zone" />
-                
                 <image id="end-node" href="assets/icon-end.webp" x="920" y="220" width="60" height="60" class="node end-node safe-zone" />
             </svg>
         </div>
