@@ -203,12 +203,42 @@
     </div>
 
     <script>
-        const paths = {
-            1: "M 50 250 L 250 100 L 500 400 L 750 100 L 950 250",
-            2: "M 50 250 L 150 250 L 150 100 L 300 100 L 300 400 L 450 400 L 450 100 L 600 100 L 600 400 L 750 400 L 750 250 L 950 250",
-            3: "M 50 250 C 50 250, 200 250, 250 250 C 250 50, 750 50, 750 250 C 750 400, 350 400, 350 250 C 350 180, 650 180, 650 250 L 950 250",
-            4: "M 50 250 L 200 250 C 400 250, 400 50, 600 50 C 800 50, 800 250, 600 250 C 400 250, 400 450, 600 450 C 800 450, 800 250, 950 250"
-        };
+// Define paths as Arrays of [x, y] coordinates
+const grids = {
+    1: [ // The Sigil (We still use string for curves, as coordinates are bad for curves)
+        "M 50 250 C 200 250, 250 50, 500 50 S 800 250, 950 250"
+    ],
+    2: [ // The Circuit (Easy to read points!)
+        [50, 250], [150, 250], [150, 100], [300, 100], [300, 400], 
+        [450, 400], [450, 100], [600, 100], [600, 400], [750, 400], 
+        [750, 250], [950, 250]
+    ],
+    3: [ // The Step-Down (A digital staircase pattern)
+        [50, 250], [150, 250], [150, 50], [250, 50], [250, 450], 
+        [350, 450], [350, 150], [450, 150], [450, 350], [550, 350], 
+        [550, 150], [650, 150], [650, 450], [750, 450], [750, 50], 
+        [850, 50], [850, 250], [950, 250]
+    ],
+    4: [ // The Hard Labyrinth
+        [50, 250], [100, 250], [100, 50], [200, 50], [200, 350], 
+        [300, 350], [300, 50], [400, 50], [400, 450], [500, 450], 
+        [500, 100], [600, 100], [600, 450], [700, 450], [700, 50], 
+        [800, 50], [800, 250], [950, 250]
+    ]
+};
+
+// HELPER: Converts an array of points into an SVG Path string
+function buildPath(data) {
+    // If it's already a string (like level 1), just return it
+    if (typeof data === 'string' || typeof data[0] === 'string') return data;
+
+    // Otherwise, map coordinates to "L" (Line) commands
+    let d = `M ${data[0][0]} ${data[0][1]}`; // Move to start
+    for (let i = 1; i < data.length; i++) {
+        d += ` L ${data[i][0]} ${data[i][1]}`; // Line to next
+    }
+    return d;
+}
 
         let active = false;
         let gracePeriod = false;
@@ -222,25 +252,29 @@
         const startNode = document.getElementById('start-node');
         const endNode = document.getElementById('end-node');
 
-        function setDifficulty(lvl) {
-            const d = paths[lvl];
-            document.getElementById('path-visual-glow').setAttribute('d', d);
-            const core = document.getElementById('path-visual-core');
-            core.setAttribute('d', d);
-            document.getElementById('path-hitbox').setAttribute('d', d);
-            
-            const totalLen = core.getTotalLength();
-            const startPt = core.getPointAtLength(0);
-            const endPt = core.getPointAtLength(totalLen);
-            
-            startNode.setAttribute('x', startPt.x - 30);
-            startNode.setAttribute('y', startPt.y - 30);
-            endNode.setAttribute('x', endPt.x - 30);
-            endNode.setAttribute('y', endPt.y - 30);
+     function setDifficulty(lvl) {
+    // GENERATE THE PATH STRING HERE
+    const d = buildPath(grids[lvl]);
+    
+    // 1. Update Visuals
+    document.getElementById('path-visual-glow').setAttribute('d', d);
+    const core = document.getElementById('path-visual-core');
+    core.setAttribute('d', d);
+    document.getElementById('path-hitbox').setAttribute('d', d);
+    
+    // ... rest of your existing setDifficulty code (snapping nodes, breadcrumbs, etc) ...
+    const totalLen = core.getTotalLength();
+    const startPt = core.getPointAtLength(0);
+    const endPt = core.getPointAtLength(totalLen);
+    
+    startNode.setAttribute('x', startPt.x - 30);
+    startNode.setAttribute('y', startPt.y - 30);
+    endNode.setAttribute('x', endPt.x - 30);
+    endNode.setAttribute('y', endPt.y - 30);
 
-            generateBreadcrumbs(core, totalLen);
-            document.getElementById('ui-difficulty').classList.add('hidden');
-        }
+    generateBreadcrumbs(core, totalLen);
+    document.getElementById('ui-difficulty').classList.add('hidden');
+}
 
         function generateBreadcrumbs(pathElement, length) {
             breadcrumbLayer.innerHTML = '';
