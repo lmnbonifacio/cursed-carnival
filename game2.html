@@ -71,12 +71,40 @@
             display: flex; flex-direction: column; align-items: center; gap: 15px; width: 100%;
         }
         .miss-btn {
-            background: #222; border: 1px solid #555; color: #aaa;
-            width: 100%; max-width: 400px; padding: 15px;
-            font-size: 1.2rem; display: flex; align-items: center; justify-content: center; gap: 10px;
+                background: linear-gradient(rgba(197, 160, 89, 0.9), rgba(138, 109, 59, 0.98)), url('assets/rock_surface.webp');
+                background-size: 600%;
+                background-blend-mode: multiply;
+                color: rgba(231, 218, 192, 0.9);
+                border: 2px solid #5e4b35;
+                padding: 15px 35px; 
+                margin: 10px;
+                font-family: 'Cinzel', serif; 
+                font-size: 0.95rem; 
+                font-weight: 900;
+                letter-spacing: 2px;
+                cursor: pointer;
+                transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+                position: relative;
+                overflow: hidden;
+                touch-action: manipulation; 
+                box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 4px 8px rgba(0,0,0,0.5);
+                text-shadow: 0 1px 0 rgb(0, 0, 0);
         }
-        .miss-btn:hover { background: #333; color: #fff; border-color: #fff; }
-        .miss-btn:active { background: #500; border-color: red; } /* Feedback on press */
+        .miss-btn:hover {
+                filter: brightness(1.1);
+                transform: translateY(-2px); 
+                box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), 0 6px 12px rgba(0,0,0,0.6);
+                border-color: #5e4b35;
+                color: rgba(197, 160, 89, 0.9);
+        }
+        .miss-btn:active { 
+            background: linear-gradient(rgba(100, 0, 0, 0.9), rgba(50, 0, 0, 0.98)), url('assets/rock_surface.webp');
+            background-size: 600%;
+            background-blend-mode: multiply;
+            border-color: #5e4b35;
+            transform: scale(0.98);
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.4);
+}
 
         @media (max-width: 768px) {
             .grid-container { grid-template-columns: repeat(3, 1fr); gap: 8px; width: 100%; max-width: 400px; }
@@ -87,7 +115,7 @@
 <body>
     <div class="screen">
         <h2>Nine Dredges</h2>
-        <p>Roll to Hit (AC 13). Tap the <strong style="color:var(--blood-bright)">Dredge</strong> on Hit. Tap <strong style="color:#aaa">Miss</strong> on Miss.</p>
+        <p>Roll to Hit (AC 13). Tap the <strong style="color:var(--blood-bright)">Dredge</strong> on Hit, else click <strong style="color:var(--blood-bright)">Attack Missed.</strong></p>
         
         <div class="combat-stats">
             <div class="stat-box">
