@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Spectral Bridge (Optimized)</title>
+    <title>The Spectral Bridge (Texture Paint)</title>
     <link rel="stylesheet" href="style.css">
     <style>
         /* --- GAME CONTAINER --- */
         .game-wrapper {
             position: relative; 
             width: 100%; max-width: 1000px; 
-            aspect-ratio: 2/1; /* Enforce aspect ratio to match viewBox */
+            aspect-ratio: 2/1; 
             margin: 20px auto;
             background-color: #020205; 
             background-image: radial-gradient(circle at 50% 50%, #11111f 0%, #020205 100%);
@@ -23,7 +23,7 @@
             user-select: none;
         }
 
-        /* --- UI OVERLAYS --- */
+        /* --- UI --- */
         .overlay-panel {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(5, 5, 10, 0.9); 
@@ -34,27 +34,22 @@
         }
         .hidden { opacity: 0; pointer-events: none; }
 
-        .difficulty-grid { 
-            display: flex; gap: 20px; margin-top: 30px; 
-            flex-wrap: wrap; justify-content: center; 
-        }
+        .difficulty-grid { display: flex; gap: 20px; margin-top: 30px; flex-wrap: wrap; justify-content: center; }
 
         .diff-btn {
             width: 60px; height: 60px; 
             padding: 0 !important; border-radius: 50%;
-            background: rgba(0,0,0,0.5); border: 2px solid var(--gold-base, #c5a059); color: var(--gold-base, #c5a059);
+            background: rgba(0,0,0,0.5); border: 2px solid #c5a059; color: #c5a059;
             font-size: 1.4rem; font-family: 'Cinzel', serif; font-weight: bold;
             display: flex; justify-content: center; align-items: center;
             margin: 0 !important; cursor: pointer;
         }
-        .diff-btn:hover { background: var(--gold-base, #c5a059); color: #000; transform: scale(1.1); }
+        .diff-btn:hover { background: #c5a059; color: #000; transform: scale(1.1); }
 
         .status-msg {
             font-family: 'Cinzel', serif; font-size: 4rem; letter-spacing: 5px; text-transform: uppercase;
             text-shadow: 0 0 30px currentColor; margin-bottom: 20px;
-            animation: textZoom 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
-        @keyframes textZoom { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
         /* --- SYNC TRACKER --- */
         #sync-tracker {
@@ -66,15 +61,18 @@
         }
         #sync-tracker.full { color: #39ff14; text-shadow: 0 0 20px #39ff14; }
 
-        /* --- VISUALS --- */
+        /* --- LAYERS --- */
         svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; z-index: 1; }
         
-        /* THE CANVAS LAYER (Replaces Breadcrumbs) */
+        /* THE CANVAS (The "Paint" Layer) */
         #trace-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 2; /* Sit on top of SVG base, below Cursor */
-            pointer-events: none; /* Let clicks pass through to SVG */
-            mix-blend-mode: screen; /* Makes the paint glow nicely */
+            z-index: 2; 
+            pointer-events: none;
+            /* CRITICAL: This clips the canvas paint to the shape of the SVG path ID defined in HTML */
+            clip-path: url(#level-clipper); 
+            /* Optional: Make the revealed texture pop */
+            filter: brightness(1.3) contrast(1.1);
         }
 
         /* 1. THE DIM BASE PATH (Ghost Bridge) */
@@ -84,43 +82,42 @@
             stroke-width: 50px; 
             stroke-linecap: round; 
             stroke-linejoin: round;
-            opacity: 0.2; 
-            filter: grayscale(100%);
+            /* LIFTED VISIBILITY: From 0.2 to 0.4 as requested */
+            opacity: 0.4; 
+            filter: grayscale(100%); /* Black and white until painted over */
         }
 
-        /* 2. THE HITBOX (Invisible Safety) */
-        .path-hitbox { 
-            fill: none; stroke: transparent; stroke-width: 70px; 
-            pointer-events: visiblePainted; 
-        }
+        /* 2. THE HITBOX */
+        .path-hitbox { fill: none; stroke: transparent; stroke-width: 70px; pointer-events: visiblePainted; }
 
         /* Nodes */
-        .node { transition: opacity 0.3s; cursor: pointer; pointer-events: visiblePainted; }
-        /* Z-Index High to ensure clickable over canvas */
-        .start-node { filter: drop-shadow(0 0 15px #39ff14); z-index: 10; position: relative; } 
-        .end-node { filter: drop-shadow(0 0 15px #aaddff); opacity: 0.9; z-index: 10; position: relative; }
+        .node { transition: opacity 0.3s; cursor: pointer; pointer-events: visiblePainted; z-index: 10; position: relative; }
+        .start-node { filter: drop-shadow(0 0 15px #39ff14); } 
+        .end-node { filter: drop-shadow(0 0 15px #aaddff); opacity: 0.9; }
 
-        /* Cursor */
+        /* 3. THE SOUL CURSOR (Sprite) */
         #soul-cursor {
-            position: absolute; width: 40px; height: 40px; 
-            background: radial-gradient(circle, #fff 0%, #aaddff 60%, transparent 70%);
-            border-radius: 50%;
+            position: absolute; 
+            width: 64px; height: 64px; /* Adjust based on sprite size */
+            background-image: url('assets/sprite-soul.png'); /* YOUR ASSET */
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
             transform: translate(-50%, -50%); 
             pointer-events: none; z-index: 100;
             display: none; 
-            mix-blend-mode: screen;
+            /* THE DYNAMIC HALO: This moves with cursor but doesn't stay on ground */
+            filter: drop-shadow(0 0 20px #aaddff) drop-shadow(0 0 40px #aaddff);
         }
 
         .game-active { cursor: none !important; }
-        
-        .fail-anim .path-base { stroke: red !important; opacity: 0.5; transition: stroke 0.2s; }
+        .fail-anim .path-base { stroke: #ff3333 !important; opacity: 0.8; filter: none; transition: stroke 0.2s; }
     </style>
 </head>
 <body>
 
     <div class="screen">
         <h2>The Spectral Bridge</h2>
-        <p>Trace the path to manifest the bridge. Fill the void.</p>
         
         <div class="game-wrapper" id="game-stage">
             <div id="soul-cursor"></div>
@@ -128,7 +125,6 @@
 
             <div id="ui-difficulty" class="overlay-panel">
                 <h3 style="color: #c5a059; font-family: 'Cinzel', serif; margin: 0; font-size: 1.5rem;">Attunement</h3>
-                <p style="margin: 10px 0 30px; font-style: italic; color: #aaa;">Select Path Complexity</p>
                 <div class="difficulty-grid">
                     <button class="diff-btn" onclick="setDifficulty(1)">I</button>
                     <button class="diff-btn" onclick="setDifficulty(2)">II</button>
@@ -152,12 +148,16 @@
             <svg viewBox="0 0 1000 500" preserveAspectRatio="none">
                  <defs>
                     <pattern id="bridgePattern" patternUnits="userSpaceOnUse" width="100" height="100">
-                        <rect width="100" height="100" fill="#222" />
                         <image href="assets/texture-bridge.webp" x="0" y="0" width="100" height="100" />
                     </pattern>
+                    
+                    <clipPath id="level-clipper">
+                        <use href="#path-visual-base" />
+                    </clipPath>
                 </defs>
 
                 <path id="path-visual-base" class="path-base" d="" />
+                
                 <path id="path-hitbox" class="path-hitbox safe-zone" d="" />
 
                 <image id="start-node" href="assets/icon-start.webp" width="60" height="60" class="node start-node safe-zone" />
@@ -179,11 +179,11 @@
 
         let active = false;
         let gracePeriod = false;
-        let checkpoints = []; // Replaces breadcrumbs logic
+        let checkpoints = [];
         let collectedCount = 0;
         let lastPos = { x: 0, y: 0 };
+        let texturePattern = null; // Will hold the canvas pattern
 
-        // DOM Elements
         const stage = document.getElementById('game-stage');
         const cursor = document.getElementById('soul-cursor');
         const tracker = document.getElementById('sync-tracker');
@@ -194,22 +194,15 @@
         const base = document.getElementById('path-visual-base');
         const hitbox = document.getElementById('path-hitbox');
 
-        // Setup Canvas Style for "Glowing Ink"
-        ctx.lineCap = 'round';
-        ctx.lineJoin = 'round';
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = '#aaddff';
-        ctx.strokeStyle = '#aaddff'; // Fallback
-        
-        // Try to create a pattern from the texture if possible, otherwise use solid glow
+        // --- SETUP PATTERN ---
         const img = new Image();
         img.src = 'assets/texture-bridge.webp';
         img.onload = () => {
-            const pattern = ctx.createPattern(img, 'repeat');
-            if(pattern) ctx.strokeStyle = pattern;
+            // Create a repeating pattern of the texture
+            texturePattern = ctx.createPattern(img, 'repeat');
         };
 
-        // --- PATH GENERATORS (Unchanged logic, compacted) ---
+        // --- PATH GENERATION ---
         function buildPathFromPoints(data) {
             let d = `M ${data[0][0]} ${data[0][1]}`;
             for (let i = 1; i < data.length; i++) d += ` L ${data[i][0]} ${data[i][1]}`;
@@ -230,7 +223,7 @@
             return d;
         }
 
-        // --- CORE FUNCTIONS ---
+        // --- CORE LOGIC ---
 
         function setDifficulty(lvl) {
             let d = "";
@@ -238,9 +231,11 @@
             else if (grids[lvl] === "HYBRID_MAZE") d = generateHybridMaze();
             else d = buildPathFromPoints(grids[lvl]);
             
+            // Update SVG Paths
             base.setAttribute('d', d);
             hitbox.setAttribute('d', d);
             
+            // Reposition Nodes
             const totalLen = base.getTotalLength();
             const startPt = base.getPointAtLength(0);
             const endPt = base.getPointAtLength(totalLen);
@@ -250,7 +245,7 @@
             endNode.setAttribute('x', endPt.x - 30);
             endNode.setAttribute('y', endPt.y - 30);
 
-            // OPTIMIZATION: Generate Virtual Checkpoints instead of DOM nodes
+            // Generate Logic Checkpoints
             generateCheckpoints(base, totalLen);
             
             document.getElementById('ui-difficulty').classList.add('hidden');
@@ -259,18 +254,11 @@
         function generateCheckpoints(pathElement, length) {
             checkpoints = [];
             collectedCount = 0;
-            // Create a checkpoint every 8 units. 
-            // 8 is dense enough for smooth tracking, but light on math.
             const density = 8; 
             const count = Math.floor(length / density);
-            
             for(let i = 0; i <= count; i++) {
                 const pt = pathElement.getPointAtLength(i * density);
-                checkpoints.push({
-                    x: pt.x,
-                    y: pt.y,
-                    collected: false
-                });
+                checkpoints.push({ x: pt.x, y: pt.y, collected: false });
             }
             updateTracker();
         }
@@ -319,7 +307,7 @@
             stage.classList.add('game-active');
             cursor.style.display = 'block';
             
-            // Initial coordinate set
+            // Setup coordinates
             const coords = getSVGCoords(e.touches ? e.touches[0] : e);
             lastPos = coords;
             moveCursorVisuals(e.touches ? e.touches[0] : e);
@@ -327,33 +315,24 @@
             startNode.style.opacity = '0.5';
         }
 
-        // Mouse Events
         window.addEventListener('mousemove', (e) => {
             if(!active) return;
             handleMove(e);
         });
 
-        // Touch Events
         window.addEventListener('touchmove', (e) => {
             if(!active) return;
             e.preventDefault(); 
             handleMove(e.touches[0]);
         }, {passive: false});
 
-        window.addEventListener('mouseup', endTrace);
-        window.addEventListener('touchend', endTrace);
+        window.addEventListener('mouseup', () => { if(active) fail(); });
+        window.addEventListener('touchend', () => { if(active) fail(); });
 
-        function endTrace() {
-            if(active) fail();
-        }
-
-        // Helper to map screen pixels to SVG/Canvas 1000x500 space
         function getSVGCoords(e) {
             const rect = stage.getBoundingClientRect();
-            // Scale factors
             const scaleX = 1000 / rect.width;
             const scaleY = 500 / rect.height;
-            
             return {
                 x: ((e.clientX || e.pageX) - rect.left) * scaleX,
                 y: ((e.clientY || e.pageY) - rect.top) * scaleY
@@ -361,7 +340,6 @@
         }
 
         function moveCursorVisuals(e) {
-            // Visual cursor still uses screen pixels relative to stage
             const rect = stage.getBoundingClientRect();
             let x = (e.clientX || e.pageX) - rect.left;
             let y = (e.clientY || e.pageY) - rect.top;
@@ -372,12 +350,10 @@
         function handleMove(e) {
             moveCursorVisuals(e);
             const curr = getSVGCoords(e);
-            
-            // COLLISION CHECK (Using existing Hitbox logic + Canvas Drawing)
-            // We still use elementFromPoint for the "Safe Zone" check because it's robust
             const screenX = e.clientX || e.pageX;
             const screenY = e.clientY || e.pageY;
             
+            // 1. COLLISION (Hitbox)
             if (!gracePeriod) {
                 const elements = document.elementsFromPoint(screenX, screenY);
                 let safe = false;
@@ -389,31 +365,31 @@
                 }
 
                 if (touchingEnd) {
-                    const ratio = collectedCount / checkpoints.length;
-                    if (ratio >= 0.95) win();
+                    if (collectedCount / checkpoints.length >= 0.95) win();
                 } else if (!safe) {
                     fail();
-                    return; // Stop drawing if failed
+                    return; 
                 }
             }
 
-            // DRAWING & COLLECTION (The optimized part)
-            // 1. Draw line on canvas
-            ctx.lineWidth = 55; // Matches visual path width
+            // 2. PAINTING (The Visual Fix)
+            // Instead of circles, we draw a continuous "pipe" using the texture pattern
+            ctx.lineWidth = 55; // Matches SVG stroke-width
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            
+            // Use the texture pattern if loaded, otherwise fallback to blue
+            ctx.strokeStyle = texturePattern ? texturePattern : '#aaddff';
+            
             ctx.beginPath();
             ctx.moveTo(lastPos.x, lastPos.y);
             ctx.lineTo(curr.x, curr.y);
             ctx.stroke();
 
-            // 2. Check "Virtual Breadcrumbs"
-            // We check distance from current mouse position to uncollected checkpoints
-            // Optimization: Only check points relatively close? 
-            // For 100-200 points, brute force loop is still under 1ms.
-            const captureRadius = 40; // Generous radius
-            
+            // 3. LOGIC (Checkpoints)
+            const captureRadius = 40; 
             for(let cp of checkpoints) {
                 if(!cp.collected) {
-                    // Simple distance formula
                     const dx = curr.x - cp.x;
                     const dy = curr.y - cp.y;
                     if (dx*dx + dy*dy < captureRadius*captureRadius) {
