@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>The Spectral Bridge</title>
+    <title>The Spectral Bridge (Optimized)</title>
     <link rel="stylesheet" href="style.css">
     <style>
         /* --- GAME CONTAINER --- */
         .game-wrapper {
             position: relative; 
-            width: 100%; max-width: 1000px; height: 500px; 
+            width: 100%; max-width: 1000px; 
+            aspect-ratio: 2/1; /* Enforce aspect ratio to match viewBox */
             margin: 20px auto;
             background-color: #020205; 
             background-image: radial-gradient(circle at 50% 50%, #11111f 0%, #020205 100%);
@@ -41,12 +42,12 @@
         .diff-btn {
             width: 60px; height: 60px; 
             padding: 0 !important; border-radius: 50%;
-            background: rgba(0,0,0,0.5); border: 2px solid var(--gold-base); color: var(--gold-base);
+            background: rgba(0,0,0,0.5); border: 2px solid var(--gold-base, #c5a059); color: var(--gold-base, #c5a059);
             font-size: 1.4rem; font-family: 'Cinzel', serif; font-weight: bold;
             display: flex; justify-content: center; align-items: center;
             margin: 0 !important; cursor: pointer;
         }
-        .diff-btn:hover { background: var(--gold-base); color: #000; box-shadow: 0 0 20px var(--gold-shadow); transform: scale(1.1); }
+        .diff-btn:hover { background: var(--gold-base, #c5a059); color: #000; transform: scale(1.1); }
 
         .status-msg {
             font-family: 'Cinzel', serif; font-size: 4rem; letter-spacing: 5px; text-transform: uppercase;
@@ -66,48 +67,43 @@
         #sync-tracker.full { color: #39ff14; text-shadow: 0 0 20px #39ff14; }
 
         /* --- VISUALS --- */
-        svg { width: 100%; height: 100%; display: block; }
+        svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; z-index: 1; }
+        
+        /* THE CANVAS LAYER (Replaces Breadcrumbs) */
+        #trace-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 2; /* Sit on top of SVG base, below Cursor */
+            pointer-events: none; /* Let clicks pass through to SVG */
+            mix-blend-mode: screen; /* Makes the paint glow nicely */
+        }
 
         /* 1. THE DIM BASE PATH (Ghost Bridge) */
         .path-base {
             fill: none; 
-            stroke: url(#bridgePattern); /* RESTORED TEXTURE */
+            stroke: url(#bridgePattern); 
             stroke-width: 50px; 
             stroke-linecap: round; 
             stroke-linejoin: round;
-            opacity: 0.2; /* Dim by default */
-            filter: grayscale(100%); /* Desaturated until lit */
+            opacity: 0.2; 
+            filter: grayscale(100%);
         }
 
         /* 2. THE HITBOX (Invisible Safety) */
         .path-hitbox { 
-            fill: none; stroke: transparent; stroke-width: 70px; /* Forgiving hitbox */
+            fill: none; stroke: transparent; stroke-width: 70px; 
             pointer-events: visiblePainted; 
         }
 
-        /* 3. THE "INK" (Active Texture Reveal) */
-        .breadcrumb {
-            fill: url(#bridgePattern); /* Uses same texture! */
-            opacity: 0; /* Invisible start */
-            pointer-events: visiblePainted;
-            /* No transition on transform to prevent "floating" feel, sharp instant response */
-        }
-
-        .breadcrumb.collected {
-            opacity: 1;
-            filter: drop-shadow(0 0 5px var(--spirit, #aaddff)) brightness(1.2);
-            pointer-events: none; 
-        }
-
         /* Nodes */
-        .node { transition: opacity 0.3s; cursor: pointer; pointer-events: visiblePainted; z-index: 10; }
-        .start-node { filter: drop-shadow(0 0 15px #39ff14); }
-        .end-node { filter: drop-shadow(0 0 15px var(--spirit)); opacity: 0.9; }
+        .node { transition: opacity 0.3s; cursor: pointer; pointer-events: visiblePainted; }
+        /* Z-Index High to ensure clickable over canvas */
+        .start-node { filter: drop-shadow(0 0 15px #39ff14); z-index: 10; position: relative; } 
+        .end-node { filter: drop-shadow(0 0 15px #aaddff); opacity: 0.9; z-index: 10; position: relative; }
 
         /* Cursor */
         #soul-cursor {
             position: absolute; width: 40px; height: 40px; 
-            background: radial-gradient(circle, #fff 0%, var(--spirit, #aaddff) 60%, transparent 70%);
+            background: radial-gradient(circle, #fff 0%, #aaddff 60%, transparent 70%);
             border-radius: 50%;
             transform: translate(-50%, -50%); 
             pointer-events: none; z-index: 100;
@@ -116,10 +112,8 @@
         }
 
         .game-active { cursor: none !important; }
-        .game-active svg { cursor: none !important; }
-
-        .fail-anim .path-base { stroke: var(--blood) !important; opacity: 0.5; }
-        .fail-anim .breadcrumb.collected { fill: var(--blood-bright); filter: drop-shadow(0 0 10px red); }
+        
+        .fail-anim .path-base { stroke: red !important; opacity: 0.5; transition: stroke 0.2s; }
     </style>
 </head>
 <body>
@@ -133,7 +127,7 @@
             <div id="sync-tracker">SYNC: 0%</div>
 
             <div id="ui-difficulty" class="overlay-panel">
-                <h3 style="color: var(--gold-highlight); font-family: 'Cinzel', serif; margin: 0; font-size: 1.5rem;">Attunement</h3>
+                <h3 style="color: #c5a059; font-family: 'Cinzel', serif; margin: 0; font-size: 1.5rem;">Attunement</h3>
                 <p style="margin: 10px 0 30px; font-style: italic; color: #aaa;">Select Path Complexity</p>
                 <div class="difficulty-grid">
                     <button class="diff-btn" onclick="setDifficulty(1)">I</button>
@@ -144,109 +138,99 @@
             </div>
 
             <div id="ui-fail" class="overlay-panel hidden">
-                <div class="status-msg" style="color: var(--blood-bright)">FALLEN</div>
+                <div class="status-msg" style="color: #ff3333">FALLEN</div>
                 <button onclick="resetGame()">Resurrect</button>
             </div>
 
             <div id="ui-win" class="overlay-panel hidden">
-                <div class="status-msg" style="color: var(--gold-highlight)">ASCENDED</div>
+                <div class="status-msg" style="color: #c5a059">ASCENDED</div>
                 <button onclick="showDifficultyMenu()">Cross Again</button>
             </div>
+
+            <canvas id="trace-layer" width="1000" height="500"></canvas>
 
             <svg viewBox="0 0 1000 500" preserveAspectRatio="none">
                  <defs>
                     <pattern id="bridgePattern" patternUnits="userSpaceOnUse" width="100" height="100">
+                        <rect width="100" height="100" fill="#222" />
                         <image href="assets/texture-bridge.webp" x="0" y="0" width="100" height="100" />
                     </pattern>
                 </defs>
 
                 <path id="path-visual-base" class="path-base" d="" />
-                
                 <path id="path-hitbox" class="path-hitbox safe-zone" d="" />
-                
-                <g id="breadcrumbs-layer"></g>
 
                 <image id="start-node" href="assets/icon-start.webp" width="60" height="60" class="node start-node safe-zone" />
                 <image id="end-node" href="assets/icon-end.webp" width="60" height="60" class="node end-node safe-zone" />
             </svg>
         </div>
 
-        <button class="back-btn" onclick="location.href='index.html'">Return to Hub</button>
+        <button class="back-btn" onclick="location.href='index.html'" style="margin-top: 20px;">Return to Hub</button>
     </div>
 
     <script>
-        // --- PATH GENERATORS ---
-
-        function buildPathFromPoints(data) {
-            let d = `M ${data[0][0]} ${data[0][1]}`;
-            for (let i = 1; i < data.length; i++) {
-                d += ` L ${data[i][0]} ${data[i][1]}`;
-            }
-            return d;
-        }
-
-        // LEVEL 3: Unicursal Circular Labyrinth
-        function generateCircularMaze() {
-            // A continuous spiral path that doubles back to create a maze-like feel
-            // Center is 500, 250
-            // We simulate a 3-ring labyrinth
-            
-            // Outer Ring Entry
-            let d = "M 50 250 L 200 250 "; 
-            // Loop around outer
-            d += "A 300 220 0 1 1 800 250 "; 
-            d += "A 300 220 0 1 1 200 250 ";
-            // Move In
-            d += "L 300 250 ";
-            // Middle Ring (Reverse direction)
-            d += "A 200 150 0 1 0 700 250 ";
-            d += "A 200 150 0 1 0 300 250 ";
-            // Move In
-            d += "L 400 250 ";
-            // Inner Ring
-            d += "A 100 80 0 1 1 600 250 ";
-            // Exit
-            d += "L 950 250";
-            return d;
-        }
-
-        // LEVEL 4: Hybrid (Circle center + Square edges)
-        function generateHybridMaze() {
-            // Square start
-            let d = "M 50 450 L 50 50 L 200 50 L 200 450 L 350 450 L 350 250 ";
-            // Circular Center
-            d += "A 150 150 0 1 1 650 250 "; // Big Loop
-            d += "A 100 100 0 1 0 450 250 "; // Inner Loop (Reverse)
-            // Exit Square
-            d += "L 650 250 L 650 50 L 800 50 L 800 450 L 950 450 L 950 250";
-            return d;
-        }
-
-        // --- DATA ---
+        // --- CONFIG & STATE ---
         const grids = {
-            1: [ // Simple: 4 Hard Turns
-                [50, 250], [200, 250], [200, 100], [500, 100], [500, 400], [800, 400], [800, 250], [950, 250]
-            ],
-            2: [ // Square Maze (Snake)
-                [50, 50], [950, 50], [950, 120], [100, 120], [100, 190], 
-                [900, 190], [900, 260], [100, 260], [100, 330], [900, 330],
-                [900, 400], [50, 400], [50, 450], [950, 450]
-            ],
+            1: [[50, 250], [200, 250], [200, 100], [500, 100], [500, 400], [800, 400], [800, 250], [950, 250]],
+            2: [[50, 50], [950, 50], [950, 120], [100, 120], [100, 190], [900, 190], [900, 260], [100, 260], [100, 330], [900, 330], [900, 400], [50, 400], [50, 450], [950, 450]],
             3: "CIRCULAR_MAZE",
             4: "HYBRID_MAZE"
         };
 
         let active = false;
         let gracePeriod = false;
-        let totalBreadcrumbs = 0;
-        let collectedBreadcrumbs = 0;
+        let checkpoints = []; // Replaces breadcrumbs logic
+        let collectedCount = 0;
+        let lastPos = { x: 0, y: 0 };
 
+        // DOM Elements
         const stage = document.getElementById('game-stage');
         const cursor = document.getElementById('soul-cursor');
         const tracker = document.getElementById('sync-tracker');
-        const breadcrumbLayer = document.getElementById('breadcrumbs-layer');
         const startNode = document.getElementById('start-node');
         const endNode = document.getElementById('end-node');
+        const canvas = document.getElementById('trace-layer');
+        const ctx = canvas.getContext('2d');
+        const base = document.getElementById('path-visual-base');
+        const hitbox = document.getElementById('path-hitbox');
+
+        // Setup Canvas Style for "Glowing Ink"
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#aaddff';
+        ctx.strokeStyle = '#aaddff'; // Fallback
+        
+        // Try to create a pattern from the texture if possible, otherwise use solid glow
+        const img = new Image();
+        img.src = 'assets/texture-bridge.webp';
+        img.onload = () => {
+            const pattern = ctx.createPattern(img, 'repeat');
+            if(pattern) ctx.strokeStyle = pattern;
+        };
+
+        // --- PATH GENERATORS (Unchanged logic, compacted) ---
+        function buildPathFromPoints(data) {
+            let d = `M ${data[0][0]} ${data[0][1]}`;
+            for (let i = 1; i < data.length; i++) d += ` L ${data[i][0]} ${data[i][1]}`;
+            return d;
+        }
+
+        function generateCircularMaze() {
+            let d = "M 50 250 L 200 250 A 300 220 0 1 1 800 250 A 300 220 0 1 1 200 250 L 300 250 ";
+            d += "A 200 150 0 1 0 700 250 A 200 150 0 1 0 300 250 L 400 250 ";
+            d += "A 100 80 0 1 1 600 250 L 950 250";
+            return d;
+        }
+
+        function generateHybridMaze() {
+            let d = "M 50 450 L 50 50 L 200 50 L 200 450 L 350 450 L 350 250 ";
+            d += "A 150 150 0 1 1 650 250 A 100 100 0 1 0 450 250 ";
+            d += "L 650 250 L 650 50 L 800 50 L 800 450 L 950 450 L 950 250";
+            return d;
+        }
+
+        // --- CORE FUNCTIONS ---
 
         function setDifficulty(lvl) {
             let d = "";
@@ -254,15 +238,9 @@
             else if (grids[lvl] === "HYBRID_MAZE") d = generateHybridMaze();
             else d = buildPathFromPoints(grids[lvl]);
             
-            // 1. Update Base Path
-            const base = document.getElementById('path-visual-base');
             base.setAttribute('d', d);
-            
-            // 2. Update Hitbox
-            const hitbox = document.getElementById('path-hitbox');
             hitbox.setAttribute('d', d);
             
-            // 3. Snap Nodes
             const totalLen = base.getTotalLength();
             const startPt = base.getPointAtLength(0);
             const endPt = base.getPointAtLength(totalLen);
@@ -272,35 +250,33 @@
             endNode.setAttribute('x', endPt.x - 30);
             endNode.setAttribute('y', endPt.y - 30);
 
-            // 4. Generate High-Density Breadcrumbs (The Fix)
-            generateBreadcrumbs(base, totalLen);
+            // OPTIMIZATION: Generate Virtual Checkpoints instead of DOM nodes
+            generateCheckpoints(base, totalLen);
             
             document.getElementById('ui-difficulty').classList.add('hidden');
         }
 
-        function generateBreadcrumbs(pathElement, length) {
-            breadcrumbLayer.innerHTML = '';
-            collectedBreadcrumbs = 0;
+        function generateCheckpoints(pathElement, length) {
+            checkpoints = [];
+            collectedCount = 0;
+            // Create a checkpoint every 8 units. 
+            // 8 is dense enough for smooth tracking, but light on math.
+            const density = 8; 
+            const count = Math.floor(length / density);
             
-            // FIX: High density (step 4) prevents "spitting blobs" look
-            const step = 4; 
-            totalBreadcrumbs = Math.floor(length / step);
-            
-            for(let i = 0; i <= totalBreadcrumbs; i++) {
-                const pt = pathElement.getPointAtLength(i * step);
-                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
-                circle.setAttribute("cx", pt.x);
-                circle.setAttribute("cy", pt.y);
-                // FIX: Radius (26) is much larger than step (4), creating solid tube
-                circle.setAttribute("r", 26); 
-                circle.setAttribute("class", "breadcrumb safe-zone");
-                breadcrumbLayer.appendChild(circle);
+            for(let i = 0; i <= count; i++) {
+                const pt = pathElement.getPointAtLength(i * density);
+                checkpoints.push({
+                    x: pt.x,
+                    y: pt.y,
+                    collected: false
+                });
             }
             updateTracker();
         }
 
         function updateTracker() {
-            const pct = totalBreadcrumbs === 0 ? 0 : Math.round((collectedBreadcrumbs / totalBreadcrumbs) * 100);
+            const pct = checkpoints.length === 0 ? 0 : Math.round((collectedCount / checkpoints.length) * 100);
             tracker.innerText = `SYNC: ${pct}%`;
             if (pct >= 95) tracker.classList.add('full');
             else tracker.classList.remove('full');
@@ -320,15 +296,17 @@
             document.getElementById('ui-win').classList.add('hidden');
             startNode.style.opacity = '1';
             
-            const crumbs = document.querySelectorAll('.breadcrumb');
-            crumbs.forEach(c => {
-                c.classList.remove('collected');
-            });
-            collectedBreadcrumbs = 0;
+            // Clear Canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Reset Logic
+            checkpoints.forEach(cp => cp.collected = false);
+            collectedCount = 0;
             updateTracker();
         }
 
-        // --- INPUT ---
+        // --- INPUT HANDLING ---
+
         startNode.addEventListener('mousedown', beginTrace);
         startNode.addEventListener('touchstart', beginTrace, {passive: false});
 
@@ -340,28 +318,50 @@
 
             stage.classList.add('game-active');
             cursor.style.display = 'block';
-            moveCursor(e.touches ? e.touches[0] : e);
+            
+            // Initial coordinate set
+            const coords = getSVGCoords(e.touches ? e.touches[0] : e);
+            lastPos = coords;
+            moveCursorVisuals(e.touches ? e.touches[0] : e);
+            
             startNode.style.opacity = '0.5';
         }
 
+        // Mouse Events
         window.addEventListener('mousemove', (e) => {
             if(!active) return;
-            moveCursor(e);
-            checkCollision(e.clientX, e.clientY);
+            handleMove(e);
         });
 
+        // Touch Events
         window.addEventListener('touchmove', (e) => {
             if(!active) return;
             e.preventDefault(); 
-            const touch = e.touches[0];
-            moveCursor(touch);
-            checkCollision(touch.clientX, touch.clientY);
+            handleMove(e.touches[0]);
         }, {passive: false});
 
-        window.addEventListener('mouseup', () => { if(active) fail(); });
-        window.addEventListener('touchend', () => { if(active) fail(); });
+        window.addEventListener('mouseup', endTrace);
+        window.addEventListener('touchend', endTrace);
 
-        function moveCursor(e) {
+        function endTrace() {
+            if(active) fail();
+        }
+
+        // Helper to map screen pixels to SVG/Canvas 1000x500 space
+        function getSVGCoords(e) {
+            const rect = stage.getBoundingClientRect();
+            // Scale factors
+            const scaleX = 1000 / rect.width;
+            const scaleY = 500 / rect.height;
+            
+            return {
+                x: ((e.clientX || e.pageX) - rect.left) * scaleX,
+                y: ((e.clientY || e.pageY) - rect.top) * scaleY
+            };
+        }
+
+        function moveCursorVisuals(e) {
+            // Visual cursor still uses screen pixels relative to stage
             const rect = stage.getBoundingClientRect();
             let x = (e.clientX || e.pageX) - rect.left;
             let y = (e.clientY || e.pageY) - rect.top;
@@ -369,37 +369,62 @@
             cursor.style.top = y + 'px';
         }
 
-        function checkCollision(x, y) {
-            if (gracePeriod) return;
+        function handleMove(e) {
+            moveCursorVisuals(e);
+            const curr = getSVGCoords(e);
             
-            // NOTE: elementFromPoint handles the screen coordinate scaling automatically
-            const elements = document.elementsFromPoint(x, y);
+            // COLLISION CHECK (Using existing Hitbox logic + Canvas Drawing)
+            // We still use elementFromPoint for the "Safe Zone" check because it's robust
+            const screenX = e.clientX || e.pageX;
+            const screenY = e.clientY || e.pageY;
             
-            let safe = false;
-            let touchingEnd = false;
-            
-            for (let el of elements) {
-                // If touching a breadcrumb (invisible or collected)
-                if (el.classList.contains('breadcrumb')) {
-                    if (!el.classList.contains('collected')) {
-                        el.classList.add('collected');
-                        collectedBreadcrumbs++;
-                        updateTracker();
-                    }
-                    safe = true;
+            if (!gracePeriod) {
+                const elements = document.elementsFromPoint(screenX, screenY);
+                let safe = false;
+                let touchingEnd = false;
+
+                for (let el of elements) {
+                    if (el.classList.contains('safe-zone')) safe = true;
+                    if (el.id === 'end-node') touchingEnd = true;
                 }
-                
-                if (el.classList.contains('safe-zone')) safe = true;
-                if (el.id === 'end-node') touchingEnd = true;
+
+                if (touchingEnd) {
+                    const ratio = collectedCount / checkpoints.length;
+                    if (ratio >= 0.95) win();
+                } else if (!safe) {
+                    fail();
+                    return; // Stop drawing if failed
+                }
             }
 
-            if (touchingEnd) {
-                const ratio = collectedBreadcrumbs / totalBreadcrumbs;
-                // Allow small margin of error (95%)
-                if (ratio >= 0.95) win();
-            } else if (!safe) {
-                fail();
+            // DRAWING & COLLECTION (The optimized part)
+            // 1. Draw line on canvas
+            ctx.lineWidth = 55; // Matches visual path width
+            ctx.beginPath();
+            ctx.moveTo(lastPos.x, lastPos.y);
+            ctx.lineTo(curr.x, curr.y);
+            ctx.stroke();
+
+            // 2. Check "Virtual Breadcrumbs"
+            // We check distance from current mouse position to uncollected checkpoints
+            // Optimization: Only check points relatively close? 
+            // For 100-200 points, brute force loop is still under 1ms.
+            const captureRadius = 40; // Generous radius
+            
+            for(let cp of checkpoints) {
+                if(!cp.collected) {
+                    // Simple distance formula
+                    const dx = curr.x - cp.x;
+                    const dy = curr.y - cp.y;
+                    if (dx*dx + dy*dy < captureRadius*captureRadius) {
+                        cp.collected = true;
+                        collectedCount++;
+                        updateTracker();
+                    }
+                }
             }
+
+            lastPos = curr;
         }
 
         function fail() {
