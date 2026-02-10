@@ -11,8 +11,8 @@
             min-height: 100vh; 
             overflow-y: auto !important; 
             overscroll-behavior-y: none;
-            /* VOID BACKGROUND: Overrides the carnival BG for this specific page */
-            background: radial-gradient(circle at center, #1a1a2e 0%, #000000 80%);
+            /* DEEP VOID BACKGROUND */
+            background: radial-gradient(circle at center, #111118 0%, #000000 90%);
             color: #e0e0e0;
         }
 
@@ -22,15 +22,16 @@
             width: 100%; max-width: 1000px; height: 500px; 
             margin: 20px auto;
             /* Darker glass for the void feel */
-            background: rgba(0, 0, 0, 0.6); 
-            border: 1px solid rgba(197, 160, 89, 0.3);
-            box-shadow: 0 0 80px rgba(0,0,0,1);
+            background: rgba(0, 0, 0, 0.75); 
+            border: 1px solid rgba(197, 160, 89, 0.2);
+            box-shadow: 0 0 100px rgba(0,0,0,1);
             backdrop-filter: blur(5px);
             border-radius: 12px; 
             overflow: hidden;
             display: flex; align-items: center; justify-content: center;
             touch-action: none; 
-            cursor: default; /* Default cursor before game starts */
+            /* Hide Default Cursor when hovering game area */
+            cursor: default; 
         }
 
         /* --- UI OVERLAYS --- */
@@ -44,30 +45,17 @@
         .hidden { opacity: 0; pointer-events: none; }
 
         .difficulty-grid { 
-            display: flex; 
-            gap: 20px; 
-            margin-top: 30px; 
-            flex-wrap: wrap; 
-            justify-content: center; 
+            display: flex; gap: 20px; margin-top: 30px; 
+            flex-wrap: wrap; justify-content: center; 
         }
         
-        /* --- DIFFICULTY BUTTONS --- */
         .diff-btn {
-            width: 60px; height: 60px; 
-            border-radius: 50%;
-            background: transparent; 
-            border: 2px solid var(--gold-base); 
-            color: var(--gold-base);
-            font-size: 1.4rem; 
-            font-family: 'Cinzel', serif; 
-            font-weight: bold;
-            cursor: pointer;
-            transition: 0.3s;
-            padding: 0; margin: 0;
-            letter-spacing: 0 !important; 
-            display: flex; 
-            justify-content: center; 
-            align-items: center;
+            width: 60px; height: 60px; border-radius: 50%;
+            background: transparent; border: 2px solid var(--gold-base); color: var(--gold-base);
+            font-size: 1.4rem; font-family: 'Cinzel', serif; font-weight: bold;
+            cursor: pointer; transition: 0.3s;
+            padding: 0; margin: 0; letter-spacing: 0 !important; 
+            display: flex; justify-content: center; align-items: center;
         }
         .diff-btn:hover { background: var(--gold-base); color: #000; box-shadow: 0 0 20px var(--gold-shadow); transform: scale(1.1); }
 
@@ -81,47 +69,52 @@
         /* --- THE BRIDGE (SVG LAYERS) --- */
         svg { width: 100%; height: 100%; display: block; }
         
-        .path-hitbox { fill: none; stroke: transparent; stroke-width: 45px; pointer-events: stroke; }
+        /* IMPORTANT: visiblePainted ensures the mouse can 'see' these elements */
+        .path-hitbox { 
+            fill: none; stroke: transparent; stroke-width: 45px; 
+            pointer-events: visiblePainted; 
+        }
         
         .path-glow { 
             fill: none; stroke: var(--spirit); stroke-width: 30px; stroke-linecap: round;
             filter: blur(8px); opacity: 0.5; transition: d 0.5s ease-in-out; 
+            pointer-events: none;
         }
         
         .path-core { 
-            fill: none; 
-            stroke-width: 25px; 
-            stroke-linecap: round;
-            opacity: 1;
-            filter: drop-shadow(0 0 5px var(--spirit)); 
-            transition: d 0.5s ease-in-out;
+            fill: none; stroke-width: 25px; stroke-linecap: round; opacity: 1;
+            filter: drop-shadow(0 0 5px var(--spirit)); transition: d 0.5s ease-in-out;
+            pointer-events: none;
         }
 
-        /* Updated Nodes (Removed Hover Transform to fix nudging bug) */
-        .node { transition: opacity 0.3s; cursor: pointer; }
+        /* NODES */
+        .node { transition: opacity 0.3s; cursor: pointer; pointer-events: visiblePainted; }
         .start-node { filter: drop-shadow(0 0 10px #39ff14); }
         .end-node { filter: drop-shadow(0 0 10px var(--spirit)); opacity: 0.8; }
-        /* Removed .node:hover transform to prevent layout shifting */
+        .safe-zone { pointer-events: visiblePainted; }
 
         /* --- CUSTOM CURSOR (SOUL SPRITE) --- */
         #soul-cursor {
             position: absolute; width: 64px; height: 64px; 
-            /* Fallback color if image fails */
-            background-color: transparent; 
-            /* Main Sprite */
+            
+            /* FALLBACK VISUAL: Glowing Orb if image fails */
+            background-color: rgba(57, 255, 20, 0.2);
+            border: 2px solid #39ff14;
+            border-radius: 50%;
+            
+            /* PRIMARY VISUAL: The Sprite */
             background-image: url('assets/sprite-soul.png');
             background-repeat: no-repeat;
             background-position: center center;
             background-size: contain;
             
             transform: translate(-50%, -50%); 
-            pointer-events: none; /* Critical: Mouse clicks pass through to SVG */
+            pointer-events: none; /* CRITICAL: Must let clicks pass through to SVG below */
             z-index: 100;
             display: none; 
             filter: drop-shadow(0 0 15px var(--spirit));
         }
 
-        /* Hide system cursor when game is active */
         .game-active { cursor: none !important; }
         .game-active svg { cursor: none !important; }
         
@@ -184,9 +177,7 @@
                 </defs>
                 
                 <path id="path-visual-glow" class="path-glow" d="" />
-                
                 <path id="path-visual-core" class="path-core" d="" stroke="url(#bridgePattern)" />
-                
                 <path id="path-hitbox" class="path-hitbox safe-zone" d="" />
                 
                 <image id="start-node" href="assets/icon-start.webp" x="20" y="220" width="60" height="60" class="node start-node safe-zone" />
@@ -207,6 +198,7 @@
         };
 
         let active = false;
+        let gracePeriod = false; // Prevents instant fail on click
         let difficulty = 3;
         const stage = document.getElementById('game-stage');
         const cursor = document.getElementById('soul-cursor');
@@ -227,6 +219,7 @@
 
         function resetGame() {
             active = false;
+            gracePeriod = false;
             stage.classList.remove('game-active', 'fail-anim');
             cursor.style.display = 'none';
             document.getElementById('ui-fail').classList.add('hidden');
@@ -242,9 +235,21 @@
         function beginTrace(e) {
             e.preventDefault();
             active = true;
+            gracePeriod = true; // Enable immunity
+            
+            // Disable immunity after 200ms
+            setTimeout(() => { gracePeriod = false; }, 200);
+
             stage.classList.add('game-active');
             cursor.style.display = 'block';
-            moveCursor(e);
+            
+            // Move cursor to start immediately
+            if(e.touches) {
+                moveCursor(e.touches[0]);
+            } else {
+                moveCursor(e);
+            }
+            
             document.getElementById('start-node').style.opacity = '0.5';
         }
 
@@ -274,6 +279,9 @@
         }
 
         function checkCollision(x, y) {
+            // If in grace period, do not fail
+            if (gracePeriod) return;
+
             const elements = document.elementsFromPoint(x, y);
             let safe = false;
             let won = false;
@@ -282,7 +290,8 @@
                 if (el.id === 'end-node') {
                     won = true; break;
                 }
-                if (el.classList.contains('safe-zone')) {
+                // Check ID for robustness
+                if (el.id === 'start-node' || el.classList.contains('safe-zone')) {
                     safe = true;
                 }
             }
