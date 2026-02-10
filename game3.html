@@ -215,4 +215,209 @@
             // Square start
             let d = "M 50 450 L 50 50 L 200 50 L 200 450 L 350 450 L 350 250 ";
             // Circular Center
-            d += "A 150 150 0 1 1
+            d += "A 150 150 0 1 1 650 250 "; // Big Loop
+            d += "A 100 100 0 1 0 450 250 "; // Inner Loop (Reverse)
+            // Exit Square
+            d += "L 650 250 L 650 50 L 800 50 L 800 450 L 950 450 L 950 250";
+            return d;
+        }
+
+        // --- DATA ---
+        const grids = {
+            1: [ // Simple: 4 Hard Turns
+                [50, 250], [200, 250], [200, 100], [500, 100], [500, 400], [800, 400], [800, 250], [950, 250]
+            ],
+            2: [ // Square Maze (Snake)
+                [50, 50], [950, 50], [950, 120], [100, 120], [100, 190], 
+                [900, 190], [900, 260], [100, 260], [100, 330], [900, 330],
+                [900, 400], [50, 400], [50, 450], [950, 450]
+            ],
+            3: "CIRCULAR_MAZE",
+            4: "HYBRID_MAZE"
+        };
+
+        let active = false;
+        let gracePeriod = false;
+        let totalBreadcrumbs = 0;
+        let collectedBreadcrumbs = 0;
+
+        const stage = document.getElementById('game-stage');
+        const cursor = document.getElementById('soul-cursor');
+        const tracker = document.getElementById('sync-tracker');
+        const breadcrumbLayer = document.getElementById('breadcrumbs-layer');
+        const startNode = document.getElementById('start-node');
+        const endNode = document.getElementById('end-node');
+
+        function setDifficulty(lvl) {
+            let d = "";
+            if (grids[lvl] === "CIRCULAR_MAZE") d = generateCircularMaze();
+            else if (grids[lvl] === "HYBRID_MAZE") d = generateHybridMaze();
+            else d = buildPathFromPoints(grids[lvl]);
+            
+            // 1. Update Base Path
+            const base = document.getElementById('path-visual-base');
+            base.setAttribute('d', d);
+            
+            // 2. Update Hitbox
+            const hitbox = document.getElementById('path-hitbox');
+            hitbox.setAttribute('d', d);
+            
+            // 3. Snap Nodes
+            const totalLen = base.getTotalLength();
+            const startPt = base.getPointAtLength(0);
+            const endPt = base.getPointAtLength(totalLen);
+            
+            startNode.setAttribute('x', startPt.x - 30);
+            startNode.setAttribute('y', startPt.y - 30);
+            endNode.setAttribute('x', endPt.x - 30);
+            endNode.setAttribute('y', endPt.y - 30);
+
+            // 4. Generate High-Density Breadcrumbs (The Fix)
+            generateBreadcrumbs(base, totalLen);
+            
+            document.getElementById('ui-difficulty').classList.add('hidden');
+        }
+
+        function generateBreadcrumbs(pathElement, length) {
+            breadcrumbLayer.innerHTML = '';
+            collectedBreadcrumbs = 0;
+            
+            // FIX: High density (step 4) prevents "spitting blobs" look
+            const step = 4; 
+            totalBreadcrumbs = Math.floor(length / step);
+            
+            for(let i = 0; i <= totalBreadcrumbs; i++) {
+                const pt = pathElement.getPointAtLength(i * step);
+                const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+                circle.setAttribute("cx", pt.x);
+                circle.setAttribute("cy", pt.y);
+                // FIX: Radius (26) is much larger than step (4), creating solid tube
+                circle.setAttribute("r", 26); 
+                circle.setAttribute("class", "breadcrumb safe-zone");
+                breadcrumbLayer.appendChild(circle);
+            }
+            updateTracker();
+        }
+
+        function updateTracker() {
+            const pct = totalBreadcrumbs === 0 ? 0 : Math.round((collectedBreadcrumbs / totalBreadcrumbs) * 100);
+            tracker.innerText = `SYNC: ${pct}%`;
+            if (pct >= 95) tracker.classList.add('full');
+            else tracker.classList.remove('full');
+        }
+
+        function showDifficultyMenu() {
+            resetGame();
+            document.getElementById('ui-difficulty').classList.remove('hidden');
+        }
+
+        function resetGame() {
+            active = false;
+            gracePeriod = false;
+            stage.classList.remove('game-active', 'fail-anim');
+            cursor.style.display = 'none';
+            document.getElementById('ui-fail').classList.add('hidden');
+            document.getElementById('ui-win').classList.add('hidden');
+            startNode.style.opacity = '1';
+            
+            const crumbs = document.querySelectorAll('.breadcrumb');
+            crumbs.forEach(c => {
+                c.classList.remove('collected');
+            });
+            collectedBreadcrumbs = 0;
+            updateTracker();
+        }
+
+        // --- INPUT ---
+        startNode.addEventListener('mousedown', beginTrace);
+        startNode.addEventListener('touchstart', beginTrace, {passive: false});
+
+        function beginTrace(e) {
+            e.preventDefault();
+            active = true;
+            gracePeriod = true;
+            setTimeout(() => { gracePeriod = false; }, 200);
+
+            stage.classList.add('game-active');
+            cursor.style.display = 'block';
+            moveCursor(e.touches ? e.touches[0] : e);
+            startNode.style.opacity = '0.5';
+        }
+
+        window.addEventListener('mousemove', (e) => {
+            if(!active) return;
+            moveCursor(e);
+            checkCollision(e.clientX, e.clientY);
+        });
+
+        window.addEventListener('touchmove', (e) => {
+            if(!active) return;
+            e.preventDefault(); 
+            const touch = e.touches[0];
+            moveCursor(touch);
+            checkCollision(touch.clientX, touch.clientY);
+        }, {passive: false});
+
+        window.addEventListener('mouseup', () => { if(active) fail(); });
+        window.addEventListener('touchend', () => { if(active) fail(); });
+
+        function moveCursor(e) {
+            const rect = stage.getBoundingClientRect();
+            let x = (e.clientX || e.pageX) - rect.left;
+            let y = (e.clientY || e.pageY) - rect.top;
+            cursor.style.left = x + 'px';
+            cursor.style.top = y + 'px';
+        }
+
+        function checkCollision(x, y) {
+            if (gracePeriod) return;
+            
+            // NOTE: elementFromPoint handles the screen coordinate scaling automatically
+            const elements = document.elementsFromPoint(x, y);
+            
+            let safe = false;
+            let touchingEnd = false;
+            
+            for (let el of elements) {
+                // If touching a breadcrumb (invisible or collected)
+                if (el.classList.contains('breadcrumb')) {
+                    if (!el.classList.contains('collected')) {
+                        el.classList.add('collected');
+                        collectedBreadcrumbs++;
+                        updateTracker();
+                    }
+                    safe = true;
+                }
+                
+                if (el.classList.contains('safe-zone')) safe = true;
+                if (el.id === 'end-node') touchingEnd = true;
+            }
+
+            if (touchingEnd) {
+                const ratio = collectedBreadcrumbs / totalBreadcrumbs;
+                // Allow small margin of error (95%)
+                if (ratio >= 0.95) win();
+            } else if (!safe) {
+                fail();
+            }
+        }
+
+        function fail() {
+            active = false;
+            stage.classList.remove('game-active');
+            stage.classList.add('fail-anim');
+            document.getElementById('ui-fail').classList.remove('hidden');
+        }
+
+        function win() {
+            active = false;
+            stage.classList.remove('game-active');
+            document.getElementById('ui-win').classList.remove('hidden');
+        }
+
+        // Init
+        setDifficulty(3); 
+        document.getElementById('ui-difficulty').classList.remove('hidden'); 
+    </script>
+</body>
+</html>
