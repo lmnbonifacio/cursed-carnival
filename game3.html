@@ -6,38 +6,47 @@
     <title>The Spectral Bridge</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* --- CORE PAGE SETUP (VOID THEME) --- */
+        /* --- CORE PAGE SETUP --- */
         body { 
             min-height: 100vh; 
             overflow-y: auto !important; 
             overscroll-behavior-y: none;
-            /* DEEP VOID BACKGROUND */
-            background: radial-gradient(circle at center, #111118 0%, #000000 90%);
-            color: #e0e0e0;
+            /* REMOVED the void background override. 
+               Now it falls back to style.css (bg.webp) for consistency. */
         }
 
-        /* --- GAME CONTAINER --- */
+        /* --- GAME CONTAINER (THE MISTY VOID) --- */
         .game-wrapper {
             position: relative; 
             width: 100%; max-width: 1000px; height: 500px; 
             margin: 20px auto;
-            /* Darker glass for the void feel */
-            background: rgba(0, 0, 0, 0.75); 
-            border: 1px solid rgba(197, 160, 89, 0.2);
-            box-shadow: 0 0 100px rgba(0,0,0,1);
-            backdrop-filter: blur(5px);
+            
+            /* CSS TEXTURE: MISTY VOID */
+            background-color: #020205; /* Deepest black base */
+            background-image: 
+                /* The Vignette (Dark edges) */
+                radial-gradient(circle at center, transparent 0%, #000000 100%),
+                /* The Mist (Swirling subtle fog) */
+                radial-gradient(circle at 20% 80%, rgba(40, 60, 80, 0.2) 0%, transparent 50%),
+                radial-gradient(circle at 80% 20%, rgba(40, 60, 80, 0.2) 0%, transparent 50%),
+                /* The Core Glow */
+                radial-gradient(circle at 50% 50%, #1a1a2e 0%, #050505 100%);
+            
+            border: 1px solid rgba(197, 160, 89, 0.3); /* Gold border */
+            box-shadow: 0 0 60px rgba(0,0,0,0.9);
             border-radius: 12px; 
             overflow: hidden;
             display: flex; align-items: center; justify-content: center;
             touch-action: none; 
-            /* Hide Default Cursor when hovering game area */
             cursor: default; 
         }
 
         /* --- UI OVERLAYS --- */
         .overlay-panel {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 50;
+            /* Slightly transparent so you can see the mist behind the menu */
+            background: rgba(5, 5, 10, 0.85); 
+            z-index: 50;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             transition: opacity 0.4s;
             padding: 20px; text-align: center;
@@ -69,7 +78,6 @@
         /* --- THE BRIDGE (SVG LAYERS) --- */
         svg { width: 100%; height: 100%; display: block; }
         
-        /* IMPORTANT: visiblePainted ensures the mouse can 'see' these elements */
         .path-hitbox { 
             fill: none; stroke: transparent; stroke-width: 45px; 
             pointer-events: visiblePainted; 
@@ -77,42 +85,39 @@
         
         .path-glow { 
             fill: none; stroke: var(--spirit); stroke-width: 30px; stroke-linecap: round;
-            filter: blur(8px); opacity: 0.5; transition: d 0.5s ease-in-out; 
+            filter: blur(10px); opacity: 0.4; transition: d 0.5s ease-in-out; 
             pointer-events: none;
         }
         
         .path-core { 
             fill: none; stroke-width: 25px; stroke-linecap: round; opacity: 1;
-            filter: drop-shadow(0 0 5px var(--spirit)); transition: d 0.5s ease-in-out;
+            filter: drop-shadow(0 0 10px var(--spirit)); transition: d 0.5s ease-in-out;
             pointer-events: none;
         }
 
-        /* NODES */
         .node { transition: opacity 0.3s; cursor: pointer; pointer-events: visiblePainted; }
-        .start-node { filter: drop-shadow(0 0 10px #39ff14); }
-        .end-node { filter: drop-shadow(0 0 10px var(--spirit)); opacity: 0.8; }
+        .start-node { filter: drop-shadow(0 0 15px #39ff14); }
+        .end-node { filter: drop-shadow(0 0 15px var(--spirit)); opacity: 0.9; }
         .safe-zone { pointer-events: visiblePainted; }
 
         /* --- CUSTOM CURSOR (SOUL SPRITE) --- */
         #soul-cursor {
             position: absolute; width: 64px; height: 64px; 
-            
-            /* FALLBACK VISUAL: Glowing Orb if image fails */
-            background-color: rgba(57, 255, 20, 0.2);
-            border: 2px solid #39ff14;
+            /* Fallback visual */
+            background-color: rgba(57, 255, 20, 0.1);
+            border: 2px solid rgba(57, 255, 20, 0.5);
             border-radius: 50%;
-            
-            /* PRIMARY VISUAL: The Sprite */
+            /* Sprite */
             background-image: url('assets/sprite-soul.png');
             background-repeat: no-repeat;
             background-position: center center;
             background-size: contain;
             
             transform: translate(-50%, -50%); 
-            pointer-events: none; /* CRITICAL: Must let clicks pass through to SVG below */
+            pointer-events: none; 
             z-index: 100;
             display: none; 
-            filter: drop-shadow(0 0 15px var(--spirit));
+            filter: drop-shadow(0 0 20px var(--spirit));
         }
 
         .game-active { cursor: none !important; }
@@ -173,11 +178,12 @@
                     <pattern id="bridgePattern" patternUnits="userSpaceOnUse" width="100" height="100">
                         <image href="assets/texture-bridge.webp" x="0" y="0" width="100" height="100" />
                     </pattern>
-                    <filter id="glow-blur"><feGaussianBlur stdDeviation="4" result="coloredBlur"/></filter>
                 </defs>
                 
                 <path id="path-visual-glow" class="path-glow" d="" />
+                
                 <path id="path-visual-core" class="path-core" d="" stroke="url(#bridgePattern)" />
+                
                 <path id="path-hitbox" class="path-hitbox safe-zone" d="" />
                 
                 <image id="start-node" href="assets/icon-start.webp" x="20" y="220" width="60" height="60" class="node start-node safe-zone" />
@@ -189,7 +195,6 @@
     </div>
 
     <script>
-        // --- PATH LOGIC ---
         const paths = {
             1: "M 50 250 C 275 500, 275 0, 500 250 S 725 500, 950 250", 
             2: "M 50 250 C 200 50, 200 450, 500 250 S 800 50, 950 250",
@@ -198,13 +203,11 @@
         };
 
         let active = false;
-        let gracePeriod = false; // Prevents instant fail on click
-        let difficulty = 3;
+        let gracePeriod = false;
         const stage = document.getElementById('game-stage');
         const cursor = document.getElementById('soul-cursor');
         
         function setDifficulty(lvl) {
-            difficulty = lvl;
             const d = paths[lvl];
             document.getElementById('path-visual-glow').setAttribute('d', d);
             document.getElementById('path-visual-core').setAttribute('d', d);
@@ -228,27 +231,20 @@
         }
 
         const startNode = document.getElementById('start-node');
-        
         startNode.addEventListener('mousedown', beginTrace);
         startNode.addEventListener('touchstart', beginTrace, {passive: false});
 
         function beginTrace(e) {
             e.preventDefault();
             active = true;
-            gracePeriod = true; // Enable immunity
-            
-            // Disable immunity after 200ms
+            gracePeriod = true;
             setTimeout(() => { gracePeriod = false; }, 200);
 
             stage.classList.add('game-active');
             cursor.style.display = 'block';
             
-            // Move cursor to start immediately
-            if(e.touches) {
-                moveCursor(e.touches[0]);
-            } else {
-                moveCursor(e);
-            }
+            if(e.touches) moveCursor(e.touches[0]);
+            else moveCursor(e);
             
             document.getElementById('start-node').style.opacity = '0.5';
         }
@@ -279,23 +275,14 @@
         }
 
         function checkCollision(x, y) {
-            // If in grace period, do not fail
             if (gracePeriod) return;
-
             const elements = document.elementsFromPoint(x, y);
             let safe = false;
             let won = false;
-
             for (let el of elements) {
-                if (el.id === 'end-node') {
-                    won = true; break;
-                }
-                // Check ID for robustness
-                if (el.id === 'start-node' || el.classList.contains('safe-zone')) {
-                    safe = true;
-                }
+                if (el.id === 'end-node') { won = true; break; }
+                if (el.id === 'start-node' || el.classList.contains('safe-zone')) { safe = true; }
             }
-            
             if (won) win();
             else if (!safe) fail();
         }
