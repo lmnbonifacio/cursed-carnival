@@ -6,30 +6,20 @@
     <title>The Spectral Bridge</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* --- GAME SPECIFIC STYLES --- */
-        /* Note: We rely on style.css for Body, H2, and standard Buttons */
-
-        /* --- GAME CONTAINER (THE MISTY VOID) --- */
+        /* --- GAME CONTAINER --- */
         .game-wrapper {
             position: relative; 
-            width: 100%; 
-            max-width: 1000px; 
-            height: 500px; 
+            width: 100%; max-width: 1000px; height: 500px; 
             margin: 20px auto;
-            
-            /* The Void Texture (Kept specific to this minigame) */
             background-color: #020205; 
+            /* Deep Void Background */
             background-image: 
-                radial-gradient(circle at center, transparent 0%, #000000 100%),
-                radial-gradient(circle at 20% 80%, rgba(40, 60, 80, 0.2) 0%, transparent 50%),
-                radial-gradient(circle at 80% 20%, rgba(40, 60, 80, 0.2) 0%, transparent 50%),
-                radial-gradient(circle at 50% 50%, #1a1a2e 0%, #050505 100%);
-            
+                radial-gradient(circle at 50% 50%, #11111f 0%, #020205 100%);
             border: 1px solid rgba(197, 160, 89, 0.3); 
             box-shadow: 0 0 60px rgba(0,0,0,0.9);
             border-radius: 12px; 
             overflow: hidden;
-            touch-action: none; 
+            touch-action: none; /* Critical for mobile touch */
             cursor: default; 
             user-select: none;
         }
@@ -37,7 +27,7 @@
         /* --- UI OVERLAYS --- */
         .overlay-panel {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(5, 5, 10, 0.85); 
+            background: rgba(5, 5, 10, 0.9); 
             z-index: 50;
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             transition: opacity 0.4s;
@@ -49,26 +39,21 @@
             display: flex; gap: 20px; margin-top: 30px; 
             flex-wrap: wrap; justify-content: center; 
         }
-        
-        /* OVERRIDE: Global button style forces padding that breaks circles. */
+
+        /* Button Overrides */
         .diff-btn {
             width: 60px; height: 60px; 
-            padding: 0 !important; /* Force override style.css */
-            border-radius: 50%;
-            background: transparent; 
+            padding: 0 !important; border-radius: 50%;
+            background: rgba(0,0,0,0.5); 
             border: 2px solid var(--gold-base); 
             color: var(--gold-base);
-            font-size: 1.4rem; 
-            font-family: 'Cinzel', serif; 
-            font-weight: bold;
+            font-size: 1.4rem; font-family: 'Cinzel', serif; font-weight: bold;
             display: flex; justify-content: center; align-items: center;
-            margin: 0 !important;
+            margin: 0 !important; cursor: pointer;
         }
         .diff-btn:hover { 
-            background: var(--gold-base); 
-            color: #000; 
-            box-shadow: 0 0 20px var(--gold-shadow); 
-            transform: scale(1.1); 
+            background: var(--gold-base); color: #000; 
+            box-shadow: 0 0 20px var(--gold-shadow); transform: scale(1.1); 
         }
 
         .status-msg {
@@ -78,83 +63,85 @@
         }
         @keyframes textZoom { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-        /* --- TRACKER --- */
+        /* --- SYNC TRACKER --- */
         #sync-tracker {
             position: absolute; top: 20px; width: 100%; text-align: center;
             font-family: 'Cinzel', serif; font-size: 1.5rem;
-            color: var(--gold-base); text-shadow: 0 0 10px rgba(0,0,0,0.8);
-            z-index: 40; pointer-events: none; opacity: 0.8;
+            color: rgba(255, 255, 255, 0.3); 
+            text-shadow: 0 0 10px rgba(0,0,0,0.8);
+            z-index: 40; pointer-events: none; transition: color 0.3s;
         }
+        #sync-tracker.full { color: #39ff14; text-shadow: 0 0 20px #39ff14; }
 
-        /* --- SVG STYLES --- */
+        /* --- VISUALS --- */
         svg { width: 100%; height: 100%; display: block; }
-        
+
+        /* The Base "Empty" Path (Dark Matter) */
+        .path-base {
+            fill: none; 
+            stroke: #1a1a2e; /* Dark Blue-Grey */
+            stroke-width: 40px; 
+            stroke-linecap: round; 
+            stroke-linejoin: round;
+            opacity: 0.5;
+            filter: drop-shadow(0 0 5px rgba(0,0,0,0.8));
+        }
+
+        /* The Hitbox (Invisible) */
         .path-hitbox { 
-            fill: none; stroke: transparent; stroke-width: 45px; 
+            fill: none; stroke: transparent; stroke-width: 60px; /* Generous hitbox */
             pointer-events: visiblePainted; 
         }
-        .path-glow { 
-            fill: none; stroke: var(--spirit); stroke-width: 30px; stroke-linecap: round;
-            filter: blur(10px); opacity: 0.4; transition: d 0.5s ease-in-out; 
-            pointer-events: none;
-        }
-        .path-core { 
-            fill: none; stroke-width: 25px; stroke-linecap: round; opacity: 1;
-            filter: drop-shadow(0 0 10px var(--spirit)); transition: d 0.5s ease-in-out;
-            pointer-events: none;
-        }
 
-        /* Trail Mechanics */
+        /* --- THE DRAWING PARTICLES (BREADCRUMBS) --- */
+        /* These act as the "Ink" or "Ice Tiles" */
         .breadcrumb {
-            fill: transparent; stroke: none;
-            transition: fill 0.5s ease, opacity 0.5s ease;
-            pointer-events: visiblePainted; 
-        }
-        .breadcrumb.collected {
-            fill: #fff; opacity: 0.6; filter: blur(2px);
-            pointer-events: none;
+            fill: var(--spirit, #aaddff);
+            opacity: 0; /* Hidden by default */
+            transition: opacity 0.1s ease-out, transform 0.3s ease-out;
+            pointer-events: visiblePainted; /* They catch the mouse */
+            mix-blend-mode: screen;
         }
 
-        .node { transition: opacity 0.3s; cursor: pointer; pointer-events: visiblePainted; }
+        /* When the cursor hits a particle */
+        .breadcrumb.collected {
+            opacity: 1;
+            fill: #fff;
+            filter: drop-shadow(0 0 8px var(--spirit, #aaddff));
+            transform: scale(1.5); /* Pop effect */
+            pointer-events: none; /* Stops re-triggering */
+        }
+
+        /* Nodes */
+        .node { transition: opacity 0.3s; cursor: pointer; pointer-events: visiblePainted; z-index: 10; }
         .start-node { filter: drop-shadow(0 0 15px #39ff14); }
         .end-node { filter: drop-shadow(0 0 15px var(--spirit)); opacity: 0.9; }
-        .safe-zone { pointer-events: visiblePainted; }
 
         /* Cursor */
         #soul-cursor {
-            position: absolute; width: 64px; height: 64px; 
-            background-color: rgba(57, 255, 20, 0.1);
-            border: 2px solid rgba(57, 255, 20, 0.5);
+            position: absolute; width: 40px; height: 40px; 
+            background: radial-gradient(circle, #fff 0%, var(--spirit, #aaddff) 50%, transparent 70%);
             border-radius: 50%;
-            background-image: url('assets/sprite-soul.png');
-            background-repeat: no-repeat;
-            background-position: center; background-size: contain;
             transform: translate(-50%, -50%); 
             pointer-events: none; z-index: 100;
             display: none; 
-            filter: drop-shadow(0 0 20px var(--spirit));
+            filter: drop-shadow(0 0 15px #fff);
+            mix-blend-mode: add;
         }
 
         .game-active { cursor: none !important; }
         .game-active svg { cursor: none !important; }
-        
-        .fail-anim .path-core { stroke: var(--blood-bright) !important; animation: shake 0.5s; }
-        .fail-anim .path-glow { stroke: var(--blood); opacity: 0.8; }
-        
-        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
 
-        @media (max-width: 768px) {
-            .game-wrapper { height: 55vh; margin: 20px auto; }
-            .status-msg { font-size: 2.5rem; }
-            .path-hitbox { stroke-width: 50px; } 
-        }
+        /* Fail State */
+        .fail-anim .path-base { stroke: #300 !important; transition: stroke 0.2s; }
+        .fail-anim .breadcrumb.collected { fill: var(--blood-bright); filter: drop-shadow(0 0 10px red); }
     </style>
 </head>
 <body>
 
     <div class="screen">
         <h2>The Spectral Bridge</h2>
-        <p>Guide the soul across the void. Fill the path to stabilize the connection.</p>
+        <p>Trace the path to manifest the bridge. Fill the void.</p>
         
         <div class="game-wrapper" id="game-stage">
             <div id="soul-cursor"></div>
@@ -182,18 +169,12 @@
             </div>
 
             <svg viewBox="0 0 1000 500" preserveAspectRatio="none">
-                 <defs>
-                    <pattern id="bridgePattern" patternUnits="userSpaceOnUse" width="100" height="100">
-                        <image href="assets/texture-bridge.webp" x="0" y="0" width="100" height="100" />
-                    </pattern>
-                </defs>
+                <path id="path-visual-base" class="path-base" d="" />
+                
+                <path id="path-hitbox" class="path-hitbox safe-zone" d="" />
                 
                 <g id="breadcrumbs-layer"></g>
 
-                <path id="path-visual-glow" class="path-glow" d="" />
-                <path id="path-visual-core" class="path-core" d="" stroke="url(#bridgePattern)" />
-                <path id="path-hitbox" class="path-hitbox safe-zone" d="" />
-                
                 <image id="start-node" href="assets/icon-start.webp" width="60" height="60" class="node start-node safe-zone" />
                 <image id="end-node" href="assets/icon-end.webp" width="60" height="60" class="node end-node safe-zone" />
             </svg>
@@ -203,43 +184,67 @@
     </div>
 
     <script>
-// Define paths as Arrays of [x, y] coordinates
-const grids = {
-    1: [ // The Sigil (We still use string for curves, as coordinates are bad for curves)
-        "M 50 250 C 200 250, 250 50, 500 50 S 800 250, 950 250"
-    ],
-    2: [ // The Circuit (Easy to read points!)
-        [50, 250], [150, 250], [150, 100], [300, 100], [300, 400], 
-        [450, 400], [450, 100], [600, 100], [600, 400], [750, 400], 
-        [750, 250], [950, 250]
-    ],
-    3: [ // The Step-Down (A digital staircase pattern)
-        [50, 250], [150, 250], [150, 50], [250, 50], [250, 450], 
-        [350, 450], [350, 150], [450, 150], [450, 350], [550, 350], 
-        [550, 150], [650, 150], [650, 450], [750, 450], [750, 50], 
-        [850, 50], [850, 250], [950, 250]
-    ],
-    4: [ // The Hard Labyrinth
-        [50, 250], [100, 250], [100, 50], [200, 50], [200, 350], 
-        [300, 350], [300, 50], [400, 50], [400, 450], [500, 450], 
-        [500, 100], [600, 100], [600, 450], [700, 450], [700, 50], 
-        [800, 50], [800, 250], [950, 250]
-    ]
-};
+        // --- PATH GENERATORS ---
 
-// HELPER: Converts an array of points into an SVG Path string
-function buildPath(data) {
-    // If it's already a string (like level 1), just return it
-    if (typeof data === 'string' || typeof data[0] === 'string') return data;
+        // 1. Helper to turn [x,y] arrays into SVG path strings
+        function buildPathFromPoints(data) {
+            if (typeof data === 'string') return data;
+            let d = `M ${data[0][0]} ${data[0][1]}`;
+            for (let i = 1; i < data.length; i++) {
+                d += ` L ${data[i][0]} ${data[i][1]}`;
+            }
+            return d;
+        }
 
-    // Otherwise, map coordinates to "L" (Line) commands
-    let d = `M ${data[0][0]} ${data[0][1]}`; // Move to start
-    for (let i = 1; i < data.length; i++) {
-        d += ` L ${data[i][0]} ${data[i][1]}`; // Line to next
-    }
-    return d;
-}
+        // 2. Procedural Circle Generator (True Concentric Maze)
+        function generateCircularMaze() {
+            const cx = 500; // Center X
+            const cy = 250; // Center Y
+            let d = "";
+            
+            // Ring 1 (Outer) - Right to Left
+            d += `M ${cx + 200} ${cy} `; // Start right
+            // Draw large arc to left side
+            d += `A 200 200 0 1 1 ${cx - 200} ${cy} `; 
+            
+            // Bridge Inwards
+            d += `L ${cx - 130} ${cy} `;
+            
+            // Ring 2 (Middle) - Left to Right
+            d += `A 130 130 0 1 0 ${cx + 130} ${cy} `;
+            
+            // Bridge Inwards
+            d += `L ${cx + 60} ${cy} `;
+            
+            // Ring 3 (Inner) - Right to Left
+            d += `A 60 60 0 1 1 ${cx - 60} ${cy} `;
+            
+            // Bridge to Center/Exit
+            d += `L ${cx} ${cy}`;
+            
+            return d;
+        }
 
+        // --- PATH DATA ---
+        const grids = {
+            1: [ // The Sigil
+                "M 50 250 C 200 250, 250 50, 500 50 S 800 250, 950 250"
+            ],
+            2: [ // The Serpent (Square wave)
+                [50, 250], [150, 250], [150, 100], [300, 100], [300, 400], 
+                [450, 400], [450, 100], [600, 100], [600, 400], [750, 400], 
+                [750, 250], [950, 250]
+            ],
+            3: "CIRCULAR_MAZE", // Special flag for procedural gen
+            4: [ // The Labyrinth (Tight Grid)
+                [50, 250], [100, 250], [100, 50], [200, 50], [200, 350], 
+                [300, 350], [300, 50], [400, 50], [400, 450], [500, 450], 
+                [500, 100], [600, 100], [600, 450], [700, 450], [700, 50], 
+                [800, 50], [800, 250], [950, 250]
+            ]
+        };
+
+        // --- GAME VARIABLES ---
         let active = false;
         let gracePeriod = false;
         let totalBreadcrumbs = 0;
@@ -252,42 +257,53 @@ function buildPath(data) {
         const startNode = document.getElementById('start-node');
         const endNode = document.getElementById('end-node');
 
-     function setDifficulty(lvl) {
-    // GENERATE THE PATH STRING HERE
-    const d = buildPath(grids[lvl]);
-    
-    // 1. Update Visuals
-    document.getElementById('path-visual-glow').setAttribute('d', d);
-    const core = document.getElementById('path-visual-core');
-    core.setAttribute('d', d);
-    document.getElementById('path-hitbox').setAttribute('d', d);
-    
-    // ... rest of your existing setDifficulty code (snapping nodes, breadcrumbs, etc) ...
-    const totalLen = core.getTotalLength();
-    const startPt = core.getPointAtLength(0);
-    const endPt = core.getPointAtLength(totalLen);
-    
-    startNode.setAttribute('x', startPt.x - 30);
-    startNode.setAttribute('y', startPt.y - 30);
-    endNode.setAttribute('x', endPt.x - 30);
-    endNode.setAttribute('y', endPt.y - 30);
+        function setDifficulty(lvl) {
+            let d = "";
+            if (grids[lvl] === "CIRCULAR_MAZE") {
+                d = generateCircularMaze();
+            } else {
+                d = buildPathFromPoints(grids[lvl]);
+            }
+            
+            // 1. Update Base Path Visuals
+            const base = document.getElementById('path-visual-base');
+            base.setAttribute('d', d);
+            
+            // 2. Update Hitbox
+            const hitbox = document.getElementById('path-hitbox');
+            hitbox.setAttribute('d', d);
+            
+            // 3. Snap Nodes to Ends
+            const totalLen = base.getTotalLength();
+            const startPt = base.getPointAtLength(0);
+            const endPt = base.getPointAtLength(totalLen);
+            
+            startNode.setAttribute('x', startPt.x - 30);
+            startNode.setAttribute('y', startPt.y - 30);
+            endNode.setAttribute('x', endPt.x - 30);
+            endNode.setAttribute('y', endPt.y - 30);
 
-    generateBreadcrumbs(core, totalLen);
-    document.getElementById('ui-difficulty').classList.add('hidden');
-}
+            // 4. Generate the "Ink" (Breadcrumbs)
+            generateBreadcrumbs(base, totalLen);
+            
+            document.getElementById('ui-difficulty').classList.add('hidden');
+        }
 
         function generateBreadcrumbs(pathElement, length) {
             breadcrumbLayer.innerHTML = '';
             collectedBreadcrumbs = 0;
-            const step = 20; 
+            
+            // Density of the trail (Lower = smoother/more particles)
+            const step = 15; 
             totalBreadcrumbs = Math.floor(length / step);
             
-            for(let i = 1; i < totalBreadcrumbs; i++) {
+            for(let i = 0; i <= totalBreadcrumbs; i++) {
                 const pt = pathElement.getPointAtLength(i * step);
                 const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
                 circle.setAttribute("cx", pt.x);
                 circle.setAttribute("cy", pt.y);
-                circle.setAttribute("r", 20);
+                circle.setAttribute("r", 20); // Visual Radius
+                // Use a class to identify them
                 circle.setAttribute("class", "breadcrumb safe-zone");
                 breadcrumbLayer.appendChild(circle);
             }
@@ -297,7 +313,9 @@ function buildPath(data) {
         function updateTracker() {
             const pct = totalBreadcrumbs === 0 ? 0 : Math.round((collectedBreadcrumbs / totalBreadcrumbs) * 100);
             tracker.innerText = `SYNC: ${pct}%`;
-            tracker.style.color = pct >= 95 ? '#39ff14' : 'var(--gold-base)';
+            
+            if (pct >= 95) tracker.classList.add('full');
+            else tracker.classList.remove('full');
         }
 
         function showDifficultyMenu() {
@@ -314,15 +332,16 @@ function buildPath(data) {
             document.getElementById('ui-win').classList.add('hidden');
             startNode.style.opacity = '1';
             
+            // Reset Breadcrumbs
             const crumbs = document.querySelectorAll('.breadcrumb');
             crumbs.forEach(c => {
                 c.classList.remove('collected');
-                c.style.fill = 'transparent';
             });
             collectedBreadcrumbs = 0;
             updateTracker();
         }
 
+        // --- INPUT HANDLING ---
         startNode.addEventListener('mousedown', beginTrace);
         startNode.addEventListener('touchstart', beginTrace, {passive: false});
 
@@ -334,10 +353,7 @@ function buildPath(data) {
 
             stage.classList.add('game-active');
             cursor.style.display = 'block';
-            
-            if(e.touches) moveCursor(e.touches[0]);
-            else moveCursor(e);
-            
+            moveCursor(e.touches ? e.touches[0] : e);
             startNode.style.opacity = '0.5';
         }
 
@@ -369,26 +385,33 @@ function buildPath(data) {
         function checkCollision(x, y) {
             if (gracePeriod) return;
             
+            // We use elementsFromPoint to find everything under cursor
             const elements = document.elementsFromPoint(x, y);
+            
             let safe = false;
             let touchingEnd = false;
-            let hitBreadcrumb = false;
             
             for (let el of elements) {
-                if (el.id === 'end-node') { touchingEnd = true; }
-                if (el.classList.contains('safe-zone')) { safe = true; }
-                
+                // 1. Check if we hit a breadcrumb we haven't collected yet
                 if (el.classList.contains('breadcrumb') && !el.classList.contains('collected')) {
                     el.classList.add('collected');
                     collectedBreadcrumbs++;
-                    hitBreadcrumb = true;
+                    updateTracker();
+                    safe = true; // Hitting a breadcrumb is definitely safe
                 }
+                // 2. Or if we are hovering an already collected one (also safe)
+                else if (el.classList.contains('safe-zone')) {
+                    safe = true;
+                }
+                
+                if (el.id === 'end-node') touchingEnd = true;
             }
-            
-            if (hitBreadcrumb) updateTracker();
 
+            // Game Logic
             if (touchingEnd) {
-                if ((collectedBreadcrumbs / totalBreadcrumbs) >= 0.95) {
+                // Must have 95% sync to win
+                const ratio = collectedBreadcrumbs / totalBreadcrumbs;
+                if (ratio >= 0.95) {
                     win();
                 }
             } else if (!safe) {
@@ -409,6 +432,7 @@ function buildPath(data) {
             document.getElementById('ui-win').classList.remove('hidden');
         }
 
+        // Init
         setDifficulty(3); 
         document.getElementById('ui-difficulty').classList.remove('hidden'); 
     </script>
