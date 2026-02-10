@@ -58,12 +58,8 @@
             font-weight: bold;
             cursor: pointer;
             transition: 0.3s;
-            
-            /* RESET GLOBAL STYLES */
             padding: 0; margin: 0;
-            letter-spacing: 0 !important; /* Fixes the left-skew caused by global button spacing */
-            
-            /* CENTER CONTENT */
+            letter-spacing: 0 !important; 
             display: flex; 
             justify-content: center; 
             align-items: center;
@@ -83,33 +79,41 @@
         .path-hitbox { fill: none; stroke: transparent; stroke-width: 45px; pointer-events: stroke; }
         
         .path-glow { 
-            fill: none; stroke: var(--spirit); stroke-width: 20px; stroke-linecap: round;
+            fill: none; stroke: var(--spirit); stroke-width: 30px; stroke-linecap: round;
             filter: blur(8px); opacity: 0.5; transition: d 0.5s ease-in-out; 
         }
+        
+        /* Updated Core to use Texture Pattern */
         .path-core { 
-            fill: none; stroke: #e0f7fa; stroke-width: 5px; stroke-dasharray: 10 20; 
-            animation: flowEnergy 1s linear infinite; opacity: 1;
-            filter: drop-shadow(0 0 5px var(--spirit)); transition: d 0.5s ease-in-out;
+            fill: none; 
+            stroke-width: 25px; /* Wider to show texture */
+            stroke-linecap: round;
+            opacity: 1;
+            filter: drop-shadow(0 0 5px var(--spirit)); 
+            transition: d 0.5s ease-in-out;
         }
-        @keyframes flowEnergy { to { stroke-dashoffset: -30; } }
 
-        .node { r: 25; transition: all 0.3s; cursor: pointer; }
-        .start-node { fill: #39ff14; filter: drop-shadow(0 0 10px #39ff14); }
-        .end-node { fill: var(--spirit); filter: drop-shadow(0 0 10px var(--spirit)); opacity: 0.6; }
-        .node:hover { r: 30; }
+        /* Updated Nodes to be Images */
+        .node { transition: all 0.3s; cursor: pointer; }
+        .start-node { filter: drop-shadow(0 0 10px #39ff14); }
+        .end-node { filter: drop-shadow(0 0 10px var(--spirit)); opacity: 0.8; }
+        .node:hover { transform: scale(1.1); transform-origin: center; }
 
+        /* --- CUSTOM CURSOR (SOUL SPRITE) --- */
         #soul-cursor {
-            position: absolute; width: 30px; height: 30px; 
-            background: #fff; border-radius: 50%;
+            position: absolute; width: 50px; height: 50px; 
+            /* Load Sprite */
+            background: url('assets/sprite-soul.png') no-repeat center center / contain;
             transform: translate(-50%, -50%); pointer-events: none; z-index: 100;
-            box-shadow: 0 0 15px #fff, 0 0 30px var(--spirit);
-            display: none; mix-blend-mode: screen;
+            display: none; 
+            /* Sprite Glow Effect */
+            filter: drop-shadow(0 0 10px var(--spirit));
         }
 
         .game-active { cursor: none !important; }
         .game-active svg { cursor: none !important; }
         
-        .fail-anim .path-core { stroke: var(--blood-bright); animation: shake 0.5s; }
+        .fail-anim .path-core { stroke: var(--blood-bright) !important; animation: shake 0.5s; }
         .fail-anim .path-glow { stroke: var(--blood); opacity: 0.8; }
         
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
@@ -161,15 +165,22 @@
 
             <svg viewBox="0 0 1000 500" preserveAspectRatio="none">
                 <defs>
+                    <pattern id="bridgePattern" patternUnits="userSpaceOnUse" width="100" height="100">
+                        <image href="assets/texture-bridge.webp" x="0" y="0" width="100" height="100" />
+                    </pattern>
+                    
                     <filter id="glow-blur"><feGaussianBlur stdDeviation="4" result="coloredBlur"/></filter>
                 </defs>
                 
                 <path id="path-visual-glow" class="path-glow" d="" />
-                <path id="path-visual-core" class="path-core" d="" />
+                
+                <path id="path-visual-core" class="path-core" d="" stroke="url(#bridgePattern)" />
+                
                 <path id="path-hitbox" class="path-hitbox safe-zone" d="" />
                 
-                <circle id="start-node" cx="50" cy="250" class="node start-node safe-zone" />
-                <circle id="end-node" cx="950" cy="250" class="node end-node safe-zone" />
+                <image id="start-node" href="assets/icon-start.webp" x="20" y="220" width="60" height="60" class="node start-node safe-zone" />
+                
+                <image id="end-node" href="assets/icon-end.webp" x="920" y="220" width="60" height="60" class="node end-node safe-zone" />
             </svg>
         </div>
 
@@ -177,21 +188,11 @@
     </div>
 
     <script>
-        // --- UPGRADED PATH LOGIC ---
-        // All paths Start at (50, 250) and End at (950, 250)
+        // --- PATH LOGIC ---
         const paths = {
-            // Level I: The Serpent (Old "Hard")
             1: "M 50 250 C 275 500, 275 0, 500 250 S 725 500, 950 250", 
-            
-            // Level II: The Helix (Old "Expert")
             2: "M 50 250 C 200 50, 200 450, 500 250 S 800 50, 950 250",
-            
-            // Level III: The Tremor (New - Sharp Zig Zags)
-            // Requires stopping momentum and pivoting sharp corners.
             3: "M 50 250 L 150 50 L 250 450 L 350 100 L 450 400 L 550 50 L 650 450 L 750 100 L 850 400 L 950 250",
-            
-            // Level IV: The Knot (New - Tangled Loops)
-            // Loops back on itself, requiring circular dexterity.
             4: "M 50 250 C 250 250, 150 50, 350 50 S 450 450, 250 450 S 550 50, 750 50 S 650 450, 850 450 S 950 250, 950 250"
         };
 
