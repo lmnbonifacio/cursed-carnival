@@ -4,23 +4,31 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>The Spectral Bridge</title>
+    
+    <link rel="stylesheet" href="style.css">
+
     <style>
-        /* --- CORE LAYOUT --- */
-        body { margin: 0; background: #000; color: #fff; font-family: 'Courier New', monospace; overflow: hidden; }
+        /* --- INTERNAL OVERRIDES FOR GAME MECHANICS --- */
+        
+        /* Removed 'background' here so it inherits from style.css */
+        body { 
+            margin: 0; 
+            overflow: hidden; /* Prevent scrolling while dragging */
+            touch-action: none;
+        }
         
         .screen {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             min-height: 100vh; padding: 20px;
         }
 
-        h2 { font-family: 'Cinzel', serif; color: #c5a059; margin-bottom: 10px; letter-spacing: 2px; }
-
-        /* --- GAME CONTAINER --- */
+        /* --- GAME CONTAINER (The Void) --- */
         .game-wrapper {
             position: relative; 
             width: 100%; max-width: 1000px; 
             aspect-ratio: 2/1; 
             margin: 0 auto;
+            /* We keep the game board dark so the glowing bridge pops */
             background-color: #020205; 
             background-image: radial-gradient(circle at 50% 50%, #11111f 0%, #020205 100%);
             border: 2px solid #463a20; 
@@ -29,6 +37,7 @@
             overflow: hidden;
             touch-action: none; 
             user-select: none;
+            cursor: default;
         }
 
         /* --- UI OVERLAYS --- */
@@ -43,18 +52,26 @@
 
         .difficulty-grid { display: flex; gap: 15px; margin-top: 25px; }
 
+        /* Button styles should inherit from style.css, but we keep these just in case specific game styling is needed */
         .diff-btn {
             width: 60px; height: 60px; border-radius: 50%;
             background: rgba(0,0,0,0.5); border: 2px solid #c5a059; color: #c5a059;
+            font-family: 'Cinzel', serif; /* Ensure font matches */
             font-size: 1.2rem; font-weight: bold; cursor: pointer;
             transition: all 0.2s;
+            display: flex; justify-content: center; align-items: center;
         }
         .diff-btn:hover { background: #c5a059; color: #000; transform: scale(1.1); }
 
-        .status-msg { font-size: 3rem; letter-spacing: 5px; text-transform: uppercase; margin-bottom: 20px; font-weight: bold;}
+        .status-msg { 
+            font-family: 'Cinzel', serif; 
+            font-size: 3rem; letter-spacing: 5px; text-transform: uppercase; 
+            margin-bottom: 20px; font-weight: bold;
+        }
 
         #sync-tracker {
             position: absolute; top: 15px; width: 100%; text-align: center;
+            font-family: 'Cinzel', serif;
             font-size: 1.2rem; color: #666; pointer-events: none; z-index: 40;
         }
         #sync-tracker.full { color: #39ff14; text-shadow: 0 0 10px #39ff14; }
@@ -62,7 +79,6 @@
         /* --- LAYERS --- */
         svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; z-index: 1; }
         
-        /* Canvas sits on top of SVG for the texture reveal */
         #trace-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 2; 
@@ -70,10 +86,10 @@
             mix-blend-mode: screen; 
         }
 
-        /* 1. VISIBILITY FIX: The Untraversed Path */
+        /* 1. VISIBILITY: The Untraversed Path */
         .path-base {
             fill: none; 
-            /* We use a solid stroke with low opacity to create a "container" look */
+            /* Defined border for visibility against the void */
             stroke: rgba(255, 255, 255, 0.15); 
             stroke-width: 50px; 
             stroke-linecap: round; 
@@ -92,7 +108,6 @@
         #soul-cursor {
             position: absolute; 
             width: 64px; height: 64px; 
-            /* Ensure you have this asset, or it will be a box */
             background-image: url('assets/sprite-soul.png'); 
             background-size: contain; background-repeat: no-repeat; background-position: center;
             transform: translate(-50%, -50%); 
@@ -116,7 +131,7 @@
             <div id="sync-tracker">SYNC: 0%</div>
 
             <div id="ui-difficulty" class="overlay-panel">
-                <h3 style="color: #c5a059;">ATTUNEMENT</h3>
+                <h3 style="color: #c5a059; font-family: 'Cinzel', serif;">ATTUNEMENT</h3>
                 <div class="difficulty-grid">
                     <button class="diff-btn" onclick="setDifficulty(1)">I</button>
                     <button class="diff-btn" onclick="setDifficulty(2)">II</button>
@@ -151,67 +166,53 @@
                 <image id="end-node" href="assets/icon-end.webp" width="60" height="60" class="node end-node safe-zone" />
             </svg>
         </div>
+
+        <button class="diff-btn" onclick="location.href='index.html'" style="width: auto; padding: 0 20px !important; border-radius: 20px; margin-top: 20px;">RETURN</button>
     </div>
 
     <script>
         // --- DATA & PATH LOGIC ---
         
-        /* COORDINATE SYSTEM: 1000x500 
-           Stroke Width: 50px
-           Safe Gap: >60px center-to-center
-        */
-
         // LEVEL 1: The Snake (Simple)
         function generateLvl1() {
-            // Simple winding path
             return "M 100 250 L 300 250 L 300 100 L 700 100 L 700 400 L 900 400";
         }
 
         // LEVEL 2: The Grid (Strict Equidistance)
         function generateLvl2() {
-            // 4 Horizontal rows. 
-            // Y Coords: 80, 190, 300, 410. 
-            // Delta Y = 110px. Stroke = 50px. Gap = 60px (Clean).
+            // Y Coords: 80, 190, 300, 410 (Delta 110px)
             let d = "M 80 80 ";
-            d += "L 920 80 ";  // Row 1 Right
-            d += "L 920 190 "; // Drop
-            d += "L 80 190 ";  // Row 2 Left
-            d += "L 80 300 ";  // Drop
-            d += "L 920 300 "; // Row 3 Right
-            d += "L 920 410 "; // Drop
-            d += "L 880 410";  // Row 4 Left (Short finish)
+            d += "L 920 80 ";  
+            d += "L 920 190 "; 
+            d += "L 80 190 ";  
+            d += "L 80 300 ";  
+            d += "L 920 300 "; 
+            d += "L 920 410 "; 
+            d += "L 880 410";  
             return d;
         }
 
         // LEVEL 3: The Rainbow (Nested Arches - No Overlap)
         function generateLvl3() {
-            // Outer Arch -> Inner Arch -> Core
-            // Start Bottom Left
             let d = "M 50 450 ";
-            // Outer Arch (Big) to Bottom Right
             d += "A 450 400 0 0 1 950 450 "; 
-            // Line Left to Inner Start
             d += "L 800 450 ";
-            // Inner Arch (Medium) back to Left
             d += "A 300 250 0 0 0 200 450 ";
-            // Line Right to Core Start
             d += "L 350 450 ";
-            // Core Arch (Small) to Center
             d += "A 150 150 0 0 1 650 450 ";
             return d;
         }
 
         // LEVEL 4: The Rune (Geometric Complex)
         function generateLvl4() {
-            // Combines diagonals and sharp turns
             let d = "M 50 250 ";
-            d += "L 150 100 "; // Up-Right Diag
-            d += "L 850 100 "; // Long Top
-            d += "L 950 250 "; // Down-Right Diag tip
-            d += "L 850 400 "; // Down-Left Diag
-            d += "L 150 400 "; // Long Bottom
-            d += "L 250 250 "; // Up-Right (Into center)
-            d += "L 750 250";  // Horizontal Center finish
+            d += "L 150 100 "; 
+            d += "L 850 100 "; 
+            d += "L 950 250 "; 
+            d += "L 850 400 "; 
+            d += "L 150 400 "; 
+            d += "L 250 250 "; 
+            d += "L 750 250";  
             return d;
         }
 
@@ -246,11 +247,9 @@
         function setDifficulty(lvl) {
             const d = levels[lvl]();
             
-            // Set Path
             base.setAttribute('d', d);
             hitbox.setAttribute('d', d);
             
-            // Place Nodes
             const totalLen = base.getTotalLength();
             const startPt = base.getPointAtLength(0);
             const endPt = base.getPointAtLength(totalLen);
@@ -260,7 +259,6 @@
             endNode.setAttribute('x', endPt.x - 30);
             endNode.setAttribute('y', endPt.y - 30);
 
-            // Generate Checkpoints (Logic only)
             checkpoints = [];
             collectedCount = 0;
             const density = 8; 
@@ -333,9 +331,8 @@
         // --- CORE PROCESS ---
 
         function getScaledPos(e) {
-            // Coordinate Mapper: Screen Pixels -> 1000x500 SVG Space
             const rect = stage.getBoundingClientRect();
-            // We use clientWidth to ignore borders for accurate mapping
+            // Use clientWidth to ignore borders
             const scaleX = 1000 / stage.clientWidth; 
             const scaleY = 500 / stage.clientHeight;
             return {
@@ -356,7 +353,7 @@
             const screenX = e.clientX || e.pageX;
             const screenY = e.clientY || e.pageY;
 
-            // 1. COLLISION (Using DOM Elements)
+            // 1. COLLISION
             if (!gracePeriod) {
                 const elements = document.elementsFromPoint(screenX, screenY);
                 let safe = false;
@@ -377,9 +374,8 @@
                 }
             }
 
-            // 2. PAINT (Canvas)
-            // Note: We use the texture if available, otherwise a default cyan
-            ctx.lineWidth = 50; // Match SVG stroke
+            // 2. PAINT
+            ctx.lineWidth = 50; 
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
             ctx.strokeStyle = texturePattern || '#aaddff';
@@ -389,8 +385,8 @@
             ctx.lineTo(curr.x, curr.y);
             ctx.stroke();
 
-            // 3. LOGIC (Checkpoints)
-            const r2 = 30 * 30; // Radius squared
+            // 3. LOGIC
+            const r2 = 30 * 30; 
             for(let cp of checkpoints) {
                 if(!cp.collected) {
                     const dx = curr.x - cp.x;
@@ -418,7 +414,7 @@
             document.getElementById('ui-win').classList.remove('hidden');
         }
 
-        // Start
+        // Init
         document.getElementById('ui-difficulty').classList.remove('hidden');
     </script>
 </body>
