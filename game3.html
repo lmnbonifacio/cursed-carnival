@@ -10,7 +10,11 @@
     <style>
         /* --- GAME-SPECIFIC STYLES --- */
         
-        /* Prevent scrolling only within the game stage area to allow page nav */
+        body {
+            /* Prevent pull-to-refresh on mobile while playing */
+            overscroll-behavior: none;
+        }
+
         .game-container {
             display: flex; 
             flex-direction: column; 
@@ -22,7 +26,7 @@
         .game-wrapper {
             position: relative; 
             width: 100%; 
-            max-width: 800px; /* Matched to typical game width */
+            max-width: 800px; 
             aspect-ratio: 2/1; 
             margin: 0 auto 20px auto;
             background-color: #020205; 
@@ -31,12 +35,12 @@
             box-shadow: 0 0 30px rgba(0,0,0,0.8);
             border-radius: 4px; 
             overflow: hidden;
-            touch-action: none; 
+            touch-action: none; /* Critical for touch dragging */
             user-select: none;
             cursor: default;
         }
 
-        /* --- CONTROLS ROW (Matches Wheel Controls) --- */
+        /* --- CONTROLS ROW --- */
         .controls-row { 
             display: flex; 
             gap: 15px; 
@@ -75,34 +79,49 @@
         #sync-tracker.full { color: var(--poison-gas); text-shadow: 0 0 10px var(--poison-gas); }
 
         /* --- LAYERS --- */
-        svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; z-index: 1; }
+        svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; z-index: 1; pointer-events: none; }
         
         #trace-layer {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 2; 
             pointer-events: none;
-            /* Normal blend mode allows the bright texture to cover the dark one */
             mix-blend-mode: normal; 
         }
 
         /* 1. VISIBILITY: The Untraversed Path (Dark/Dormant) */
         .path-base {
             fill: none; 
-            /* We use the texture pattern here too */
+            stroke: #333; /* Fallback if texture fails */
             stroke: url(#bridgePattern); 
             stroke-width: 50px; 
             stroke-linecap: round; 
             stroke-linejoin: round;
-            /* Dim the untraversed path to make it look dormant */
-            filter: brightness(0.3) sepia(1) grayscale(0.5);
-            opacity: 0.6;
+            filter: brightness(0.4) sepia(0.8) grayscale(0.2);
+            opacity: 0.8;
         }
 
-        /* 2. THE HITBOX (Invisible) */
-        .path-hitbox { fill: none; stroke: transparent; stroke-width: 60px; pointer-events: visiblePainted; }
+        /* 2. THE HITBOX (Invisible but Interactive) */
+        .path-hitbox { 
+            fill: none; 
+            stroke: transparent; 
+            stroke-width: 60px; 
+            stroke-linecap: round; 
+            stroke-linejoin: round;
+            pointer-events: stroke; /* Ensures only the stroke captures events */
+            /* Fallback for older browsers */
+            cursor: crosshair;
+        }
+        /* Ensure specific class overrides defaults */
+        .safe-zone { pointer-events: stroke; }
 
         /* Nodes */
-        .node { transition: opacity 0.3s; cursor: pointer; pointer-events: visiblePainted; z-index: 10; position: relative; }
+        .node { 
+            transition: opacity 0.3s; 
+            cursor: pointer; 
+            pointer-events: auto; /* Explicitly allow clicks on nodes */
+            z-index: 10; 
+            position: relative; 
+        }
         .start-node { filter: drop-shadow(0 0 10px var(--poison-gas)); } 
         .end-node { filter: drop-shadow(0 0 10px var(--spirit)); opacity: 0.9; }
 
@@ -120,13 +139,12 @@
 
         .game-active { cursor: none !important; }
         
-        /* Failure Animation: Turn the base path red */
         .fail-anim .path-base { 
             filter: brightness(0.5) sepia(1) hue-rotate(-50deg) saturate(5); 
             transition: filter 0.2s; 
         }
 
-        /* --- MODAL OVERLAYS (Harmonized with Game 1) --- */
+        /* --- MODAL OVERLAYS --- */
         .modal-overlay {
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.85); z-index: 200;
@@ -160,7 +178,7 @@
 
     <div class="screen">
         <h2>The Spectral Bridge</h2>
-        <p>Select an attunement level, then click and drag the soul to the portal. Do not stray from the path.</p>
+        <p>Select an attunement level. Drag the soul to the portal. Do not stray from the path.</p>
         
         <div class="game-container">
             <div class="game-wrapper" id="game-stage">
@@ -194,7 +212,7 @@
                 <div id="ui-win" class="modal-overlay">
                     <div class="modal-content">
                         <div class="status-msg" style="color: var(--gold-base)">CONNECTED</div>
-                        <p style="margin-bottom: 20px; font-size: 0.9rem;">The soul passage is stable.</p>
+                        <p style="margin-bottom: 20px; font-size: 0.9rem; color: #aaa;">The soul passage is stable.</p>
                         <button class="modal-btn" onclick="resetGame()">Continue</button>
                     </div>
                 </div>
@@ -214,14 +232,11 @@
     <script>
         // --- DATA & PATH LOGIC ---
         
-        // LEVEL 1: The Snake (Simple)
         function generateLvl1() {
             return "M 100 250 L 300 250 L 300 100 L 700 100 L 700 400 L 900 400";
         }
 
-        // LEVEL 2: The Grid (Strict Equidistance)
         function generateLvl2() {
-            // Y Coords: 80, 190, 300, 410 (Delta 110px)
             let d = "M 80 80 ";
             d += "L 920 80 ";  
             d += "L 920 190 "; 
@@ -233,7 +248,6 @@
             return d;
         }
 
-        // LEVEL 3: The Rainbow (Nested Arches - No Overlap)
         function generateLvl3() {
             let d = "M 50 450 ";
             d += "A 450 400 0 0 1 950 450 "; 
@@ -244,7 +258,6 @@
             return d;
         }
 
-        // LEVEL 4: The Rune (Geometric Complex)
         function generateLvl4() {
             let d = "M 50 250 ";
             d += "L 150 100 "; 
@@ -284,26 +297,26 @@
         img.src = 'assets/texture-bridge.webp';
         img.onload = () => { 
             texturePattern = ctx.createPattern(img, 'repeat'); 
-            // Initialize default level once texture is ready
-            setDifficulty(1); 
         };
+        // NOTE: We do NOT wait for onload to start the game. 
+        // If image fails, the game works with fallback colors.
 
         // --- GAME LOGIC ---
 
         function setDifficulty(lvl) {
             currentLevel = lvl;
             
-            // Update UI buttons
             document.querySelectorAll('.control-btn').forEach(b => b.classList.remove('active'));
             document.getElementById(`btn-lvl-${lvl}`).classList.add('active');
 
-            // Generate Path
             const d = levels[lvl]();
             base.setAttribute('d', d);
             hitbox.setAttribute('d', d);
             
-            // Position Start/End Nodes
             const totalLen = base.getTotalLength();
+            // Handle error case if path is invalid
+            if (totalLen === 0) return;
+
             const startPt = base.getPointAtLength(0);
             const endPt = base.getPointAtLength(totalLen);
             
@@ -312,10 +325,10 @@
             endNode.setAttribute('x', endPt.x - 30);
             endNode.setAttribute('y', endPt.y - 30);
 
-            // Generate Checkpoints
+            // Checkpoints
             checkpoints = [];
             collectedCount = 0;
-            const density = 8; 
+            const density = 10; 
             const count = Math.floor(totalLen / density);
             for(let i = 0; i <= count; i++) {
                 const pt = base.getPointAtLength(i * density);
@@ -334,7 +347,6 @@
             document.getElementById('ui-win').classList.remove('modal-active');
             startNode.style.opacity = '1';
             
-            // Clear Canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
             
             checkpoints.forEach(cp => cp.collected = false);
@@ -351,85 +363,112 @@
 
         // --- INPUT ---
 
+        // Bind Start Node explicitly
         startNode.addEventListener('mousedown', startTrace);
         startNode.addEventListener('touchstart', startTrace, {passive: false});
 
         function startTrace(e) {
-            e.preventDefault();
+            if (e.cancelable) e.preventDefault();
+            
             active = true;
             gracePeriod = true;
-            setTimeout(() => { gracePeriod = false; }, 200);
+            // Short grace period to escape the exact start center
+            setTimeout(() => { gracePeriod = false; }, 300);
 
             stage.classList.add('game-active');
             cursor.style.display = 'block';
             startNode.style.opacity = '0.5';
 
+            // Reset canvas for fresh attempt (optional, or keep trail?)
+            // We usually keep trail if it's a single run, but here we just continue.
+            
             const pos = getScaledPos(e.touches ? e.touches[0] : e);
             lastPos = pos;
             updateCursorVisual(e.touches ? e.touches[0] : e);
         }
 
+        // Bind Window for dragging outside start node
         window.addEventListener('mousemove', (e) => { if(active) processMove(e); });
         window.addEventListener('touchmove', (e) => { 
-            if(active) { e.preventDefault(); processMove(e.touches[0]); }
+            if(active) { 
+                if(e.cancelable) e.preventDefault(); 
+                processMove(e.touches[0]); 
+            }
         }, {passive: false});
         
         window.addEventListener('mouseup', endTrace);
         window.addEventListener('touchend', endTrace);
 
-        function endTrace() { if(active) fail(); }
+        function endTrace() { 
+            if(active) {
+                // If they let go, it's a fail (must hold connection)
+                fail(); 
+            }
+        }
 
         // --- CORE PROCESS ---
 
         function getScaledPos(e) {
             const rect = stage.getBoundingClientRect();
-            // Use clientWidth to ignore borders
-            const scaleX = 1000 / stage.clientWidth; 
-            const scaleY = 500 / stage.clientHeight;
+            // Calculate scale based on the internal resolution (1000x500)
+            const scaleX = 1000 / rect.width; 
+            const scaleY = 500 / rect.height;
             return {
-                x: ((e.clientX || e.pageX) - rect.left) * scaleX,
-                y: ((e.clientY || e.pageY) - rect.top) * scaleY
+                x: ((e.clientX) - rect.left) * scaleX,
+                y: ((e.clientY) - rect.top) * scaleY
             };
         }
 
         function updateCursorVisual(e) {
             const rect = stage.getBoundingClientRect();
-            cursor.style.left = ((e.clientX || e.pageX) - rect.left) + 'px';
-            cursor.style.top = ((e.clientY || e.pageY) - rect.top) + 'px';
+            // Cursor visual uses page coordinates relative to screen, 
+            // but we want it relative to the game stage top/left to handle scrolling better.
+            // Actually fixed positioning is easier if game-wrapper is relative.
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            
+            cursor.style.left = x + 'px';
+            cursor.style.top = y + 'px';
         }
 
         function processMove(e) {
             updateCursorVisual(e);
+            
+            const screenX = e.clientX;
+            const screenY = e.clientY;
             const curr = getScaledPos(e);
-            const screenX = e.clientX || e.pageX;
-            const screenY = e.clientY || e.pageY;
 
             // 1. COLLISION
             if (!gracePeriod) {
+                // elementsFromPoint checks all layers under the finger
                 const elements = document.elementsFromPoint(screenX, screenY);
                 let safe = false;
                 let onEnd = false;
                 
                 for(let el of elements) {
+                    // Check for class 'safe-zone' (Path Hitbox, Start Node, End Node)
                     if(el.classList.contains('safe-zone')) safe = true;
                     if(el.id === 'end-node') onEnd = true;
                 }
 
                 if(onEnd) {
-                    if(collectedCount / checkpoints.length > 0.95) win();
+                    if(collectedCount / checkpoints.length > 0.90) {
+                        win();
+                    }
                     return;
                 }
+                
+                // If not in a safe zone and not in grace period -> FAIL
                 if(!safe) {
                     fail();
                     return;
                 }
             }
 
-            // 2. PAINT (The "Active" Texture)
+            // 2. PAINT
             ctx.lineWidth = 50; 
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
-            // Use the pattern if loaded, otherwise fallback color
             ctx.strokeStyle = texturePattern || '#aaddff';
             
             ctx.beginPath();
@@ -438,9 +477,39 @@
             ctx.stroke();
 
             // 3. LOGIC (Checkpoints)
-            const r2 = 30 * 30; 
+            // Optimize: Only check uncollected checkpoints
+            const r2 = 40 * 40; // Hit radius
             for(let cp of checkpoints) {
                 if(!cp.collected) {
                     const dx = curr.x - cp.x;
                     const dy = curr.y - cp.y;
                     if(dx*dx + dy*dy < r2) {
+                        cp.collected = true;
+                        collectedCount++;
+                        updateTracker();
+                    }
+                }
+            }
+            lastPos = curr;
+        }
+
+        function fail() {
+            active = false;
+            stage.classList.remove('game-active');
+            stage.classList.add('fail-anim');
+            document.getElementById('ui-fail').classList.add('modal-active');
+        }
+
+        function win() {
+            active = false;
+            stage.classList.remove('game-active');
+            document.getElementById('ui-win').classList.add('modal-active');
+        }
+
+        // --- INIT ---
+        // Run immediately.
+        setDifficulty(1);
+
+    </script>
+</body>
+</html>
