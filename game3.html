@@ -8,73 +8,71 @@
     <link rel="stylesheet" href="style.css">
 
     <style>
-        /* --- INTERNAL OVERRIDES FOR GAME MECHANICS --- */
+        /* --- GAME-SPECIFIC STYLES --- */
         
-        /* Removed 'background' here so it inherits from style.css */
-        body { 
-            margin: 0; 
-            overflow: hidden; /* Prevent scrolling while dragging */
-            touch-action: none;
-        }
-        
-        .screen {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            min-height: 100vh; padding: 20px;
+        /* Prevent scrolling only within the game stage area to allow page nav */
+        .game-container {
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            width: 100%;
         }
 
-        /* --- GAME CONTAINER (The Void) --- */
+        /* --- THE VOID (Game Board) --- */
         .game-wrapper {
             position: relative; 
-            width: 100%; max-width: 1000px; 
+            width: 100%; 
+            max-width: 800px; /* Matched to typical game width */
             aspect-ratio: 2/1; 
-            margin: 0 auto;
-            /* We keep the game board dark so the glowing bridge pops */
+            margin: 0 auto 20px auto;
             background-color: #020205; 
             background-image: radial-gradient(circle at 50% 50%, #11111f 0%, #020205 100%);
             border: 2px solid #463a20; 
-            box-shadow: 0 0 50px rgba(0,0,0,0.8);
-            border-radius: 8px; 
+            box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            border-radius: 4px; 
             overflow: hidden;
             touch-action: none; 
             user-select: none;
             cursor: default;
         }
 
-        /* --- UI OVERLAYS --- */
-        .overlay-panel {
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(5, 5, 10, 0.95); 
-            z-index: 50;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            transition: opacity 0.3s;
+        /* --- CONTROLS ROW (Matches Wheel Controls) --- */
+        .controls-row { 
+            display: flex; 
+            gap: 15px; 
+            justify-content: center; 
+            flex-wrap: wrap; 
+            margin-bottom: 20px; 
         }
-        .hidden { opacity: 0; pointer-events: none; }
 
-        .difficulty-grid { display: flex; gap: 15px; margin-top: 25px; }
-
-        /* Button styles should inherit from style.css, but we keep these just in case specific game styling is needed */
-        .diff-btn {
-            width: 60px; height: 60px; border-radius: 50%;
-            background: rgba(0,0,0,0.5); border: 2px solid #c5a059; color: #c5a059;
-            font-family: 'Cinzel', serif; /* Ensure font matches */
-            font-size: 1.2rem; font-weight: bold; cursor: pointer;
-            transition: all 0.2s;
+        .control-btn {
+            width: 60px; height: 60px; 
+            border-radius: 50%;
+            background: rgba(0,0,0,0.6);
+            border: 1px solid var(--gold-shadow);
+            color: var(--gold-base);
+            font-family: 'Cinzel', serif;
+            font-size: 1.2rem; 
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s ease;
             display: flex; justify-content: center; align-items: center;
         }
-        .diff-btn:hover { background: #c5a059; color: #000; transform: scale(1.1); }
-
-        .status-msg { 
-            font-family: 'Cinzel', serif; 
-            font-size: 3rem; letter-spacing: 5px; text-transform: uppercase; 
-            margin-bottom: 20px; font-weight: bold;
+        .control-btn:hover, .control-btn.active { 
+            background: var(--gold-base); 
+            color: #000; 
+            box-shadow: 0 0 15px var(--gold-highlight);
+            transform: scale(1.1);
         }
 
+        /* --- IN-GAME UI --- */
         #sync-tracker {
             position: absolute; top: 15px; width: 100%; text-align: center;
             font-family: 'Cinzel', serif;
             font-size: 1.2rem; color: #666; pointer-events: none; z-index: 40;
+            text-shadow: 0 2px 5px black;
         }
-        #sync-tracker.full { color: #39ff14; text-shadow: 0 0 10px #39ff14; }
+        #sync-tracker.full { color: var(--poison-gas); text-shadow: 0 0 10px var(--poison-gas); }
 
         /* --- LAYERS --- */
         svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: block; z-index: 1; }
@@ -83,17 +81,21 @@
             position: absolute; top: 0; left: 0; width: 100%; height: 100%;
             z-index: 2; 
             pointer-events: none;
-            mix-blend-mode: screen; 
+            /* Normal blend mode allows the bright texture to cover the dark one */
+            mix-blend-mode: normal; 
         }
 
-        /* 1. VISIBILITY: The Untraversed Path */
+        /* 1. VISIBILITY: The Untraversed Path (Dark/Dormant) */
         .path-base {
             fill: none; 
-            /* Defined border for visibility against the void */
-            stroke: rgba(255, 255, 255, 0.15); 
+            /* We use the texture pattern here too */
+            stroke: url(#bridgePattern); 
             stroke-width: 50px; 
             stroke-linecap: round; 
             stroke-linejoin: round;
+            /* Dim the untraversed path to make it look dormant */
+            filter: brightness(0.3) sepia(1) grayscale(0.5);
+            opacity: 0.6;
         }
 
         /* 2. THE HITBOX (Invisible) */
@@ -101,8 +103,8 @@
 
         /* Nodes */
         .node { transition: opacity 0.3s; cursor: pointer; pointer-events: visiblePainted; z-index: 10; position: relative; }
-        .start-node { filter: drop-shadow(0 0 10px #39ff14); } 
-        .end-node { filter: drop-shadow(0 0 10px #aaddff); opacity: 0.9; }
+        .start-node { filter: drop-shadow(0 0 10px var(--poison-gas)); } 
+        .end-node { filter: drop-shadow(0 0 10px var(--spirit)); opacity: 0.9; }
 
         /* 3. SOUL CURSOR */
         #soul-cursor {
@@ -113,61 +115,100 @@
             transform: translate(-50%, -50%); 
             pointer-events: none; z-index: 100;
             display: none; 
-            /* The Halo Effect */
-            filter: drop-shadow(0 0 15px #aaddff);
+            filter: drop-shadow(0 0 15px var(--spirit));
         }
 
         .game-active { cursor: none !important; }
-        .fail-anim .path-base { stroke: #550000; transition: stroke 0.2s; }
+        
+        /* Failure Animation: Turn the base path red */
+        .fail-anim .path-base { 
+            filter: brightness(0.5) sepia(1) hue-rotate(-50deg) saturate(5); 
+            transition: filter 0.2s; 
+        }
+
+        /* --- MODAL OVERLAYS (Harmonized with Game 1) --- */
+        .modal-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); z-index: 200;
+            display: flex; align-items: center; justify-content: center;
+            opacity: 0; visibility: hidden; pointer-events: none;
+            transition: opacity 0.3s;
+            backdrop-filter: blur(5px);
+        }
+        .modal-active { opacity: 1; visibility: visible; pointer-events: auto; }
+        
+        .modal-content {
+            background: #111; border: 2px solid var(--gold-base);
+            padding: 20px; width: 80%; max-width: 400px; text-align: center;
+            box-shadow: 0 0 30px rgba(197, 160, 89, 0.2);
+        }
+        .status-msg { 
+            font-family: 'Cinzel', serif; 
+            font-size: 2rem; letter-spacing: 3px; text-transform: uppercase; 
+            margin-bottom: 15px; font-weight: bold;
+        }
+        .modal-btn {
+            background: transparent; border: 1px solid #666; color: #aaa;
+            padding: 10px 25px; font-family: 'Cinzel', serif; cursor: pointer;
+            transition: 0.2s;
+        }
+        .modal-btn:hover { border-color: var(--gold-base); color: var(--gold-base); }
+
     </style>
 </head>
 <body>
 
     <div class="screen">
         <h2>The Spectral Bridge</h2>
+        <p>Select an attunement level, then click and drag the soul to the portal. Do not stray from the path.</p>
         
-        <div class="game-wrapper" id="game-stage">
-            <div id="soul-cursor"></div>
-            <div id="sync-tracker">SYNC: 0%</div>
+        <div class="game-container">
+            <div class="game-wrapper" id="game-stage">
+                <div id="soul-cursor"></div>
+                <div id="sync-tracker">SYNC: 0%</div>
 
-            <div id="ui-difficulty" class="overlay-panel">
-                <h3 style="color: #c5a059; font-family: 'Cinzel', serif;">ATTUNEMENT</h3>
-                <div class="difficulty-grid">
-                    <button class="diff-btn" onclick="setDifficulty(1)">I</button>
-                    <button class="diff-btn" onclick="setDifficulty(2)">II</button>
-                    <button class="diff-btn" onclick="setDifficulty(3)">III</button>
-                    <button class="diff-btn" onclick="setDifficulty(4)">IV</button>
+                <canvas id="trace-layer" width="1000" height="500"></canvas>
+
+                <svg viewBox="0 0 1000 500" preserveAspectRatio="none">
+                     <defs>
+                        <pattern id="bridgePattern" patternUnits="userSpaceOnUse" width="100" height="100">
+                            <image href="assets/texture-bridge.webp" x="0" y="0" width="100" height="100" />
+                        </pattern>
+                    </defs>
+
+                    <path id="path-visual-base" class="path-base" d="" />
+                    
+                    <path id="path-hitbox" class="path-hitbox safe-zone" d="" />
+
+                    <image id="start-node" href="assets/icon-start.webp" width="60" height="60" class="node start-node safe-zone" />
+                    <image id="end-node" href="assets/icon-end.webp" width="60" height="60" class="node end-node safe-zone" />
+                </svg>
+
+                <div id="ui-fail" class="modal-overlay">
+                    <div class="modal-content">
+                        <div class="status-msg" style="color: var(--blood-bright)">SEVERED</div>
+                        <button class="modal-btn" onclick="resetGame()">Try Again</button>
+                    </div>
+                </div>
+
+                <div id="ui-win" class="modal-overlay">
+                    <div class="modal-content">
+                        <div class="status-msg" style="color: var(--gold-base)">CONNECTED</div>
+                        <p style="margin-bottom: 20px; font-size: 0.9rem;">The soul passage is stable.</p>
+                        <button class="modal-btn" onclick="resetGame()">Continue</button>
+                    </div>
                 </div>
             </div>
 
-            <div id="ui-fail" class="overlay-panel hidden">
-                <div class="status-msg" style="color: #ff3333">SEVERED</div>
-                <button class="diff-btn" onclick="resetGame()" style="width: auto; padding: 0 20px !important; border-radius: 20px;">RETRY</button>
+            <div class="controls-row">
+                <button class="control-btn active" id="btn-lvl-1" onclick="setDifficulty(1)">I</button>
+                <button class="control-btn" id="btn-lvl-2" onclick="setDifficulty(2)">II</button>
+                <button class="control-btn" id="btn-lvl-3" onclick="setDifficulty(3)">III</button>
+                <button class="control-btn" id="btn-lvl-4" onclick="setDifficulty(4)">IV</button>
             </div>
-
-            <div id="ui-win" class="overlay-panel hidden">
-                <div class="status-msg" style="color: #c5a059">CONNECTED</div>
-                <button class="diff-btn" onclick="showDifficultyMenu()" style="width: auto; padding: 0 20px !important; border-radius: 20px;">CONTINUE</button>
-            </div>
-
-            <canvas id="trace-layer" width="1000" height="500"></canvas>
-
-            <svg viewBox="0 0 1000 500" preserveAspectRatio="none">
-                 <defs>
-                    <pattern id="bridgePattern" patternUnits="userSpaceOnUse" width="100" height="100">
-                        <image href="assets/texture-bridge.webp" x="0" y="0" width="100" height="100" />
-                    </pattern>
-                </defs>
-
-                <path id="path-visual-base" class="path-base" d="" />
-                <path id="path-hitbox" class="path-hitbox safe-zone" d="" />
-
-                <image id="start-node" href="assets/icon-start.webp" width="60" height="60" class="node start-node safe-zone" />
-                <image id="end-node" href="assets/icon-end.webp" width="60" height="60" class="node end-node safe-zone" />
-            </svg>
         </div>
 
-        <button class="diff-btn" onclick="location.href='index.html'" style="width: auto; padding: 0 20px !important; border-radius: 20px; margin-top: 20px;">RETURN</button>
+        <button class="back-btn" onclick="location.href='index.html'">Return to Hub</button>
     </div>
 
     <script>
@@ -225,6 +266,7 @@
         let collectedCount = 0;
         let lastPos = { x: 0, y: 0 };
         let texturePattern = null;
+        let currentLevel = 1;
 
         // --- DOM ---
         const stage = document.getElementById('game-stage');
@@ -240,16 +282,27 @@
         // --- TEXTURE SETUP ---
         const img = new Image();
         img.src = 'assets/texture-bridge.webp';
-        img.onload = () => { texturePattern = ctx.createPattern(img, 'repeat'); };
+        img.onload = () => { 
+            texturePattern = ctx.createPattern(img, 'repeat'); 
+            // Initialize default level once texture is ready
+            setDifficulty(1); 
+        };
 
         // --- GAME LOGIC ---
 
         function setDifficulty(lvl) {
-            const d = levels[lvl]();
+            currentLevel = lvl;
             
+            // Update UI buttons
+            document.querySelectorAll('.control-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`btn-lvl-${lvl}`).classList.add('active');
+
+            // Generate Path
+            const d = levels[lvl]();
             base.setAttribute('d', d);
             hitbox.setAttribute('d', d);
             
+            // Position Start/End Nodes
             const totalLen = base.getTotalLength();
             const startPt = base.getPointAtLength(0);
             const endPt = base.getPointAtLength(totalLen);
@@ -259,6 +312,7 @@
             endNode.setAttribute('x', endPt.x - 30);
             endNode.setAttribute('y', endPt.y - 30);
 
+            // Generate Checkpoints
             checkpoints = [];
             collectedCount = 0;
             const density = 8; 
@@ -268,8 +322,7 @@
                 checkpoints.push({ x: pt.x, y: pt.y, collected: false });
             }
             
-            document.getElementById('ui-difficulty').classList.add('hidden');
-            updateTracker();
+            resetGame();
         }
 
         function resetGame() {
@@ -277,18 +330,16 @@
             gracePeriod = false;
             stage.classList.remove('game-active', 'fail-anim');
             cursor.style.display = 'none';
-            document.getElementById('ui-fail').classList.add('hidden');
-            document.getElementById('ui-win').classList.add('hidden');
+            document.getElementById('ui-fail').classList.remove('modal-active');
+            document.getElementById('ui-win').classList.remove('modal-active');
             startNode.style.opacity = '1';
+            
+            // Clear Canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
             checkpoints.forEach(cp => cp.collected = false);
             collectedCount = 0;
             updateTracker();
-        }
-
-        function showDifficultyMenu() {
-            resetGame();
-            document.getElementById('ui-difficulty').classList.remove('hidden');
         }
 
         function updateTracker() {
@@ -374,10 +425,11 @@
                 }
             }
 
-            // 2. PAINT
+            // 2. PAINT (The "Active" Texture)
             ctx.lineWidth = 50; 
             ctx.lineCap = 'round';
             ctx.lineJoin = 'round';
+            // Use the pattern if loaded, otherwise fallback color
             ctx.strokeStyle = texturePattern || '#aaddff';
             
             ctx.beginPath();
@@ -385,37 +437,10 @@
             ctx.lineTo(curr.x, curr.y);
             ctx.stroke();
 
-            // 3. LOGIC
+            // 3. LOGIC (Checkpoints)
             const r2 = 30 * 30; 
             for(let cp of checkpoints) {
                 if(!cp.collected) {
                     const dx = curr.x - cp.x;
                     const dy = curr.y - cp.y;
                     if(dx*dx + dy*dy < r2) {
-                        cp.collected = true;
-                        collectedCount++;
-                        updateTracker();
-                    }
-                }
-            }
-            lastPos = curr;
-        }
-
-        function fail() {
-            active = false;
-            stage.classList.remove('game-active');
-            stage.classList.add('fail-anim');
-            document.getElementById('ui-fail').classList.remove('hidden');
-        }
-
-        function win() {
-            active = false;
-            stage.classList.remove('game-active');
-            document.getElementById('ui-win').classList.remove('hidden');
-        }
-
-        // Init
-        document.getElementById('ui-difficulty').classList.remove('hidden');
-    </script>
-</body>
-</html>
