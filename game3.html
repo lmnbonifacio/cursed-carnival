@@ -4,47 +4,20 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>The Spectral Bridge</title>
+    <link rel="stylesheet" href="style.css">
     <style>
-        /* --- CORE PAGE SETUP --- */
-        body { 
-            min-height: 100vh; 
-            overflow-y: auto !important; 
-            overscroll-behavior-y: none;
-            background-color: #020205;
-            color: #C5A059;
-            font-family: sans-serif;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-
-        /* --- VARIABLES --- */
-        :root {
-            --gold-base: #C5A059;
-            --gold-highlight: #F4E4BC;
-            --gold-shadow: #8A6E36;
-            --spirit: #A0Cfe6; /* Spectral Blue */
-            --blood: #590505;
-            --blood-bright: #ff1a1a;
-        }
-
-        .screen {
-            width: 100%;
-            max-width: 1000px;
-            text-align: center;
-            padding: 20px;
-        }
-
-        h2 { font-family: 'Cinzel', serif; letter-spacing: 2px; color: var(--gold-highlight); }
+        /* --- GAME SPECIFIC STYLES --- */
+        /* Note: We rely on style.css for Body, H2, and standard Buttons */
 
         /* --- GAME CONTAINER (THE MISTY VOID) --- */
         .game-wrapper {
             position: relative; 
-            width: 100%; max-width: 1000px; height: 500px; 
+            width: 100%; 
+            max-width: 1000px; 
+            height: 500px; 
             margin: 20px auto;
             
-            /* CSS TEXTURE: MISTY VOID */
+            /* The Void Texture (Kept specific to this minigame) */
             background-color: #020205; 
             background-image: 
                 radial-gradient(circle at center, transparent 0%, #000000 100%),
@@ -77,14 +50,26 @@
             flex-wrap: wrap; justify-content: center; 
         }
         
+        /* OVERRIDE: Global button style forces padding that breaks circles. */
         .diff-btn {
-            width: 60px; height: 60px; border-radius: 50%;
-            background: transparent; border: 2px solid var(--gold-base); color: var(--gold-base);
-            font-size: 1.4rem; font-family: 'Cinzel', serif; font-weight: bold;
-            cursor: pointer; transition: 0.3s;
-            padding: 0; margin: 0; display: flex; justify-content: center; align-items: center;
+            width: 60px; height: 60px; 
+            padding: 0 !important; /* Force override style.css */
+            border-radius: 50%;
+            background: transparent; 
+            border: 2px solid var(--gold-base); 
+            color: var(--gold-base);
+            font-size: 1.4rem; 
+            font-family: 'Cinzel', serif; 
+            font-weight: bold;
+            display: flex; justify-content: center; align-items: center;
+            margin: 0 !important;
         }
-        .diff-btn:hover { background: var(--gold-base); color: #000; box-shadow: 0 0 20px var(--gold-shadow); transform: scale(1.1); }
+        .diff-btn:hover { 
+            background: var(--gold-base); 
+            color: #000; 
+            box-shadow: 0 0 20px var(--gold-shadow); 
+            transform: scale(1.1); 
+        }
 
         .status-msg {
             font-family: 'Cinzel', serif; font-size: 4rem; letter-spacing: 5px; text-transform: uppercase;
@@ -93,7 +78,7 @@
         }
         @keyframes textZoom { from { transform: scale(0.5); opacity: 0; } to { transform: scale(1); opacity: 1; } }
 
-        /* --- NEW UI: SYNC TRACKER --- */
+        /* --- TRACKER --- */
         #sync-tracker {
             position: absolute; top: 20px; width: 100%; text-align: center;
             font-family: 'Cinzel', serif; font-size: 1.5rem;
@@ -101,39 +86,32 @@
             z-index: 40; pointer-events: none; opacity: 0.8;
         }
 
-        /* --- SVG LAYERS & PATHS --- */
+        /* --- SVG STYLES --- */
         svg { width: 100%; height: 100%; display: block; }
         
         .path-hitbox { 
             fill: none; stroke: transparent; stroke-width: 45px; 
             pointer-events: visiblePainted; 
         }
-        
         .path-glow { 
             fill: none; stroke: var(--spirit); stroke-width: 30px; stroke-linecap: round;
             filter: blur(10px); opacity: 0.4; transition: d 0.5s ease-in-out; 
             pointer-events: none;
         }
-        
         .path-core { 
             fill: none; stroke-width: 25px; stroke-linecap: round; opacity: 1;
             filter: drop-shadow(0 0 10px var(--spirit)); transition: d 0.5s ease-in-out;
             pointer-events: none;
         }
 
-        /* --- VISUAL COMPLETION (The Trail) --- */
+        /* Trail Mechanics */
         .breadcrumb {
-            fill: transparent; 
-            stroke: none;
+            fill: transparent; stroke: none;
             transition: fill 0.5s ease, opacity 0.5s ease;
             pointer-events: visiblePainted; 
         }
-
-        /* When the sprite hits a breadcrumb, it lights up */
         .breadcrumb.collected {
-            fill: #fff; 
-            opacity: 0.6;
-            filter: blur(2px);
+            fill: #fff; opacity: 0.6; filter: blur(2px);
             pointer-events: none;
         }
 
@@ -142,7 +120,7 @@
         .end-node { filter: drop-shadow(0 0 15px var(--spirit)); opacity: 0.9; }
         .safe-zone { pointer-events: visiblePainted; }
 
-        /* --- CUSTOM CURSOR --- */
+        /* Cursor */
         #soul-cursor {
             position: absolute; width: 64px; height: 64px; 
             background-color: rgba(57, 255, 20, 0.1);
@@ -150,11 +128,9 @@
             border-radius: 50%;
             background-image: url('assets/sprite-soul.png');
             background-repeat: no-repeat;
-            background-position: center;
-            background-size: contain;
+            background-position: center; background-size: contain;
             transform: translate(-50%, -50%); 
-            pointer-events: none; 
-            z-index: 100;
+            pointer-events: none; z-index: 100;
             display: none; 
             filter: drop-shadow(0 0 20px var(--spirit));
         }
@@ -168,13 +144,14 @@
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
 
         @media (max-width: 768px) {
-            .game-wrapper { height: 55vh; margin: 40px auto; }
+            .game-wrapper { height: 55vh; margin: 20px auto; }
             .status-msg { font-size: 2.5rem; }
             .path-hitbox { stroke-width: 50px; } 
         }
     </style>
 </head>
 <body>
+
     <div class="screen">
         <h2>The Spectral Bridge</h2>
         <p>Guide the soul across the void. Fill the path to stabilize the connection.</p>
@@ -184,7 +161,7 @@
             <div id="sync-tracker">SYNC: 0%</div>
 
             <div id="ui-difficulty" class="overlay-panel">
-                <h3 style="color: var(--gold-highlight); font-family: 'Cinzel', serif; margin: 0;">Attunement</h3>
+                <h3 style="color: var(--gold-highlight); font-family: 'Cinzel', serif; margin: 0; font-size: 1.5rem;">Attunement</h3>
                 <p style="margin: 10px 0 30px; font-style: italic; color: #aaa;">Select Path Complexity</p>
                 <div class="difficulty-grid">
                     <button class="diff-btn" onclick="setDifficulty(1)">I</button>
@@ -196,12 +173,12 @@
 
             <div id="ui-fail" class="overlay-panel hidden">
                 <div class="status-msg" style="color: var(--blood-bright)">FALLEN</div>
-                <button onclick="resetGame()" style="padding: 10px 20px; background: transparent; border: 1px solid red; color: red; font-family: 'Cinzel', serif; cursor: pointer;">Resurrect</button>
+                <button onclick="resetGame()">Resurrect</button>
             </div>
 
             <div id="ui-win" class="overlay-panel hidden">
                 <div class="status-msg" style="color: var(--gold-highlight)">ASCENDED</div>
-                <button onclick="showDifficultyMenu()" style="padding: 10px 20px; background: transparent; border: 1px solid gold; color: gold; font-family: 'Cinzel', serif; cursor: pointer;">Cross Again</button>
+                <button onclick="showDifficultyMenu()">Cross Again</button>
             </div>
 
             <svg viewBox="0 0 1000 500" preserveAspectRatio="none">
@@ -222,7 +199,7 @@
             </svg>
         </div>
 
-        <button class="back-btn" onclick="location.href='index.html'" style="margin-top: 20px; background: none; border: 1px solid #444; color: #888; padding: 10px;">Return to Hub</button>
+        <button class="back-btn" onclick="location.href='index.html'">Return to Hub</button>
     </div>
 
     <script>
@@ -268,7 +245,6 @@
         function generateBreadcrumbs(pathElement, length) {
             breadcrumbLayer.innerHTML = '';
             collectedBreadcrumbs = 0;
-            // Density of the trail
             const step = 20; 
             totalBreadcrumbs = Math.floor(length / step);
             
@@ -277,7 +253,7 @@
                 const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
                 circle.setAttribute("cx", pt.x);
                 circle.setAttribute("cy", pt.y);
-                circle.setAttribute("r", 20); // Radius
+                circle.setAttribute("r", 20);
                 circle.setAttribute("class", "breadcrumb safe-zone");
                 breadcrumbLayer.appendChild(circle);
             }
@@ -307,7 +283,7 @@
             const crumbs = document.querySelectorAll('.breadcrumb');
             crumbs.forEach(c => {
                 c.classList.remove('collected');
-                c.style.fill = 'transparent'; // Hard reset
+                c.style.fill = 'transparent';
             });
             collectedBreadcrumbs = 0;
             updateTracker();
